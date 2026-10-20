@@ -3,7 +3,8 @@ import { Cinzel, Inter } from "next/font/google";
 import "./globals.css";
 import RealtimeRefresher from "@/components/RealtimeRefresher";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
-import PWARegister from "@/components/PWARegister"; // <-- IMPORTANTE
+import PWARegister from "@/components/PWARegister";
+import PWARecovery from "@/components/PWARecovery"; // <-- 1. IMPORTAMOS EL NUEVO COMPONENTE
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -22,7 +23,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Real Sacerdocio",
   description: "Un lugar de encuentro con Dios.",
-  manifest: "/manifest.json", // <-- Conecta con tu archivo public/manifest.json
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -48,7 +49,8 @@ export default function RootLayout({
       <body className={`${cinzel.variable} ${inter.variable} font-sans bg-real-black text-white antialiased selection:bg-real-purple`}>
         <RealtimeRefresher />
         <PWAInstallPrompt />
-        <PWARegister /> {/* <-- Registra el Service Worker en el navegador */}
+        <PWARegister /> 
+        <PWARecovery /> {/* <-- 2. COLOCAMOS EL COMPONENTE AQUÍ */}
         {children}
       </body>
     </html>
