@@ -14,11 +14,11 @@ export default function EventsSlider() {
   useEffect(() => {
     const fetchEventos = async () => {
       const { data } = await supabase
-  .from('eventos')
-  .select('*')
-  .eq('estado', 'proximo')
-  .eq('aprobado', true) // <-- AQUÍ ESTÁ EL NUEVO FILTRO
-  .order('fecha_inicio', { ascending: true });
+        .from('eventos')
+        .select('*')
+        .eq('estado', 'proximo')
+        .eq('aprobado', true)
+        .order('fecha_inicio', { ascending: true });
 
       if (data) setEventos(data);
       setLoading(false);
@@ -116,7 +116,8 @@ export default function EventsSlider() {
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center gap-2 text-gray-300 text-sm">
                       <CalendarDays size={16} className="text-real-gold" />
-                      <span>{new Date(evento.fecha_inicio).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                      {/* AQUÍ ESTÁ EL ARREGLO DE LA ZONA HORARIA */}
+                      <span>{new Date(evento.fecha_inicio + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-300 text-sm">
                       <MapPin size={16} className="text-real-gold" />
@@ -124,7 +125,6 @@ export default function EventsSlider() {
                     </div>
                   </div>
                   
-                  {/* ESTE ES EL BOTÓN CORREGIDO CON EL SLUG */}
                   <Link 
                     href={`/eventos/${evento.slug}`}
                     className="w-full text-center bg-white/10 hover:bg-white text-white hover:text-black border border-white/20 py-3 rounded-xl font-medium transition-all"
