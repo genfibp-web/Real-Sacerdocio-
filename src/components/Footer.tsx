@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react"; // Solo importamos MapPin
+import { MapPin } from "lucide-react";
 
 export default function Footer() {
   const googleMapsUrl = "https://www.google.com/maps/search/?api=1&query=18.44795697205258,-69.01268224147996";
@@ -16,7 +16,6 @@ export default function Footer() {
             Un lugar de encuentro con Dios, donde cada persona puede encontrar propósito, comunidad y restauración.
           </p>
           
-          {/* Redes Sociales (Instagram con SVG nativo) */}
           <div className="flex justify-center md:justify-start gap-4">
             <a 
               href={instagramUrl} 
@@ -25,18 +24,7 @@ export default function Footer() {
               className="p-2.5 bg-white/5 hover:bg-real-purple rounded-full transition-colors group"
               title="Síguenos en Instagram"
             >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="20" 
-                height="20" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                className="text-gray-300 group-hover:text-white transition-colors"
-              >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 group-hover:text-white transition-colors">
                 <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
                 <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
                 <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
@@ -80,8 +68,17 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/10 text-center text-gray-600 text-sm">
-        <p>© 2026 Real Sacerdocio. Todos los derechos reservados.</p>
+      {/* Franja inferior: Copyright y Botón Panel */}
+      <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+        <p className="text-gray-600 text-sm">© 2026 Real Sacerdocio. Todos los derechos reservados.</p>
+        
+        {/* NUEVO BOTÓN AL PANEL */}
+        <Link 
+          href="/admin" 
+          className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white px-5 py-2.5 rounded-full border border-white/10 transition-all text-xs font-medium"
+        >
+          Panel Líderes
+        </Link>
       </div>
     </footer>
   );
