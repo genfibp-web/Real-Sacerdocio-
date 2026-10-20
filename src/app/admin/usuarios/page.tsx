@@ -27,25 +27,36 @@ export default function UsuariosAdmin() {
   };
 
   useEffect(() => {
-    fetchUsuarios();
-
-    // 1. Declaramos el canal (esto era lo que faltaba)
-    const room = supabase.channel('online-users');
-
-    // 2. Escuchamos los cambios de presencia
-    room.on('presence', { event: 'sync' }, () => {
-      const state = room.presenceState();
-      // El "as any" evita que Vercel se queje al compilar
-      const users = Object.keys(state).map((key) => (state[key][0] as any).user_id);
-      setOnlineUsers(users);
-    }).subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) await room.track({ user_id: session.user.id });
+    // 🛡️ CAPA DE SEGURIDAD: Verificar si es admin antes de mostrar la página
+    const checkAdmin = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: perfil } = await supabase.from('perfiles').select('rol').eq('id', session.user.id).single();
+        if (perfil?.rol !== 'admin') {
+          // Si no es admin, lo pateamos al dashboard
+          window.location.href = "/admin/dashboard"; 
+          return;
+        }
       }
-    });
+      // Si es admin, cargamos los datos y el radar
+      fetchUsuarios();
 
-    return () => { supabase.removeChannel(room); };
+      const room = supabase.channel('online-users');
+      room.on('presence', { event: 'sync' }, () => {
+        const state = room.presenceState();
+        const users = Object.keys(state).map((key) => (state[key][0] as any).user_id);
+        setOnlineUsers(users);
+      }).subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) await room.track({ user_id: session.user.id });
+        }
+      });
+
+      return () => { supabase.removeChannel(room); };
+    };
+
+    checkAdmin();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

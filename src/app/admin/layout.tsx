@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users } from "lucide-react"; // <-- Agregamos Users
+import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -50,14 +50,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (pathname === "/admin") return <main className="bg-real-black min-h-screen">{children}</main>;
   if (isLoading) return <div className="min-h-screen bg-real-black flex items-center justify-center text-white">Cargando panel...</div>;
 
+  // 1. Definimos el menú base para todos
   const menuItems = [
     { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
     { name: "Eventos", href: "/admin/eventos", icon: CalendarDays },
     { name: "Publicaciones", href: "/admin/publicaciones", icon: FileText }, 
     { name: "Recuerdos", href: "/admin/galeria", icon: ImageIcon }, 
     { name: "Prédicas", href: "/admin/predicas", icon: MessageSquare },
-    { name: "Usuarios", href: "/admin/usuarios", icon: Users }, // <-- LA NUEVA OPCIÓN
   ];
+
+  // 2. Si el usuario es admin, le agregamos la opción de Usuarios
+  if (user?.rol === 'admin') {
+    menuItems.push({ name: "Usuarios", href: "/admin/usuarios", icon: Users });
+  }
 
   return (
     <div className="flex h-screen bg-real-black text-white">
