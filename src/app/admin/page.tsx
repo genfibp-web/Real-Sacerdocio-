@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -10,9 +10,25 @@ import { supabase } from "@/lib/supabase";
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Iniciamos en true para revisar sesión
   const [error, setError] = useState("");
   const router = useRouter();
+
+  // 🔥 AQUÍ ESTÁ LA MAGIA: Revisar si ya hay sesión activa
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // Si ya hay sesión, pasamos directo al dashboard sin pedir contraseña
+        router.replace("/admin/dashboard");
+      } else {
+        // Si no hay sesión, mostramos el formulario
+        setLoading(false);
+      }
+    };
+    checkSession();
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +41,6 @@ export default function AdminLogin() {
     });
 
     if (error) {
-      // Mensaje de error genérico para no dar pistas
       setError("Credenciales incorrectas. Verifica tu correo y contraseña.");
       setLoading(false);
     } else {
@@ -33,6 +48,15 @@ export default function AdminLogin() {
       router.push("/admin/dashboard"); 
     }
   };
+
+  // Mientras revisa la sesión, mostramos una pantalla de carga
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-real-black">
+        <Loader2 className="animate-spin text-real-purple" size={40} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-real-black relative overflow-hidden px-4">
@@ -63,7 +87,6 @@ export default function AdminLogin() {
                 type="email" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                // CAMBIO DE SEGURIDAD AQUÍ
                 placeholder="correo@ejemplo.com" 
                 className="w-full bg-black/50 border border-white/10 text-white pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:border-real-purple transition-colors"
                 required
@@ -93,7 +116,7 @@ export default function AdminLogin() {
             disabled={loading}
             className="w-full bg-gradient-to-r from-real-purple to-real-blue hover:from-real-blue hover:to-real-purple text-white py-3 rounded-xl font-semibold transition-all shadow-[0_0_20px_rgba(76,29,149,0.4)] flex justify-center items-center gap-2"
           >
-            {loading ? <Loader2 className="animate-spin" size={20} /> : "Iniciar Sesión"}
+            Iniciar Sesión
           </button>
         </form>
 
