@@ -19,7 +19,7 @@ export default function UsuariosAdmin() {
   });
 
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
-  const [usuarioToDelete, setUsuarioToDelete] = useState<any | null>(null); // Estado para el modal
+  const [usuarioToDelete, setUsuarioToDelete] = useState<any | null>(null); 
 
   const fetchUsuarios = async () => {
     const { data } = await supabase.from('perfiles').select('*').order('nombre');
@@ -29,11 +29,14 @@ export default function UsuariosAdmin() {
   useEffect(() => {
     fetchUsuarios();
 
-    // Presencia en Tiempo Real
+    // 1. Declaramos el canal (esto era lo que faltaba)
     const room = supabase.channel('online-users');
+
+    // 2. Escuchamos los cambios de presencia
     room.on('presence', { event: 'sync' }, () => {
       const state = room.presenceState();
-      const users = Object.keys(state).map((key) => state[key][0].user_id);
+      // El "as any" evita que Vercel se queje al compilar
+      const users = Object.keys(state).map((key) => (state[key][0] as any).user_id);
       setOnlineUsers(users);
     }).subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
@@ -45,12 +48,11 @@ export default function UsuariosAdmin() {
     return () => { supabase.removeChannel(room); };
   }, []);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Si es admin, forzamos la comunidad a 'general'. Si es líder, usamos la seleccionada.
       const payload = {
         ...formData,
         comunidad_slug: formData.rol === 'admin' ? 'general' : formData.comunidad_slug
@@ -75,7 +77,6 @@ export default function UsuariosAdmin() {
     }
   };
 
-  // Ejecuta la eliminación real llamando a la API
   const confirmDelete = async () => {
     if (!usuarioToDelete) return;
     
@@ -88,7 +89,7 @@ export default function UsuariosAdmin() {
       setFeedback({ type: 'success', message: "Usuario eliminado del sistema." });
       fetchUsuarios();
     }
-    setUsuarioToDelete(null); // Cierra el modal
+    setUsuarioToDelete(null); 
   };
 
   return (
@@ -175,7 +176,7 @@ export default function UsuariosAdmin() {
                       </div>
                       <div>
                         <p className="font-medium text-white">{user.nombre}</p>
-                                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
                           {user.rol === 'admin' ? (
                             <>
                               <Shield size={12} className="text-real-gold" />
@@ -192,7 +193,6 @@ export default function UsuariosAdmin() {
                       </div>
                     </div>
                     
-                    {/* Botón que abre el modal */}
                     <button onClick={() => setUsuarioToDelete(user)} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg">
                       <Trash2 size={16} />
                     </button>
@@ -204,7 +204,7 @@ export default function UsuariosAdmin() {
         </div>
       </div>
 
-      {/* MODAL DE ELIMINACIÓN (Elegante) */}
+      {/* MODAL DE ELIMINACIÓN */}
       {usuarioToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" onClick={() => setUsuarioToDelete(null)}></div>
