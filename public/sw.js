@@ -1,9 +1,9 @@
 const CACHE_NAME = 'real-sacerdocio-v1';
 const ASSETS_TO_CACHE = [
-  '/',
   '/manifest.json',
   '/logo_Rs.png',
   '/fondo_grande.webp',
+  // Puedes agregar aquí otras imágenes estáticas como 'damas.webp', 'pastor.webp', etc.
 ];
 
 self.addEventListener('install', (event) => {
@@ -31,17 +31,19 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // 🛡️ PROTECCIÓN DE SESIÓN: Ignorar peticiones de API, Supabase, y el panel de Admin
+  const url = new URL(event.request.url);
+
+  // 🛡️ REGLA DE ORO: No tocar peticiones de Supabase, API, ni navegación HTML
   if (
-    event.request.method !== 'GET' || 
-    event.request.url.includes('/api/') || 
-    event.request.url.includes('supabase.co') ||
-    event.request.url.includes('/admin')
+    event.request.method !== 'GET' ||
+    url.pathname.startsWith('/api/') ||
+    url.hostname.includes('supabase.co') ||
+    event.request.mode === 'navigate' // El HTML (como /admin) siempre va a la red
   ) {
-    return; // Dejar que el navegador haga la petición normal a la red
+    return; // Deja que el navegador haga la petición normal
   }
 
-  // Estrategia Cache-First solo para imágenes y archivos estáticos
+  // Solo cachear imágenes y fuentes estáticas
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);
