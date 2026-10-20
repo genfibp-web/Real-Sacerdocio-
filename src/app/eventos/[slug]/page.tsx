@@ -65,7 +65,7 @@ export default async function EventoPage({ params }: { params: Promise<{ slug: s
   // 📞 DIRECTORIO DE NÚMEROS DE WHATSAPP POR COMUNIDAD
   // Si una comunidad no tiene número (o lo dejas vacío), el botón no aparecerá.
   const telefonosComunidades: Record<string, string> = {
-    jovenes: "8296412185", // <-- PON AQUÍ EL NÚMERO REAL DE JÓVENES (sin el signo +)
+    jovenes: "8296512185", // <-- PON AQUÍ EL NÚMERO REAL DE JÓVENES (sin el signo +)
     damas: "",              // <-- Aquí pondrás el de Damas después
     caballeros: "",         // <-- Aquí pondrás el de Caballeros después
     ninos: "",              // <-- Aquí pondrás el de Niños después
