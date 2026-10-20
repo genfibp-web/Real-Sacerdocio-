@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X, Globe } from "lucide-react"; // <-- Agregamos Globe
 import { supabase } from "@/lib/supabase";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -12,7 +12,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Estado para el menú móvil
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (pathname === "/admin") {
@@ -43,7 +43,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     checkUser();
   }, [pathname, router]);
 
-  // Cerrar el menú al cambiar de página en móvil
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [pathname]);
@@ -71,7 +70,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex h-screen bg-real-black text-white overflow-hidden">
       
-      {/* OVERLAY (Fondo oscuro cuando el menú está abierto en móvil) */}
+      {/* OVERLAY */}
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 md:hidden" 
@@ -79,11 +78,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         ></div>
       )}
 
-      {/* SIDEBAR (Menú Lateral) */}
+      {/* SIDEBAR */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-real-dark border-r border-white/5 flex flex-col transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="h-20 flex items-center justify-between border-b border-white/5 px-6">
           <Image src="/logo_Rs.png" alt="Logo" width={80} height={30} className="object-contain" />
-          {/* Botón para cerrar en móvil */}
           <button className="md:hidden text-gray-400 hover:text-white" onClick={() => setIsSidebarOpen(false)}>
             <X size={24} />
           </button>
@@ -101,18 +99,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        <div className="p-4 border-t border-white/5">
+        {/* SECCIÓN INFERIOR: Ir a la web y Cerrar Sesión */}
+        <div className="p-4 border-t border-white/5 space-y-2">
+          <Link 
+            href="/" 
+            className="w-full flex items-center gap-3 px-4 py-3 text-real-gold hover:text-white transition-colors rounded-xl hover:bg-real-gold/10 border border-transparent hover:border-real-gold/30"
+          >
+            <Globe size={20} /> Ir a la Web
+          </Link>
+          
           <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-red-400 transition-colors rounded-xl hover:bg-white/5">
             <LogOut size={20} /> Cerrar Sesión
           </button>
         </div>
       </aside>
 
-      {/* CONTENIDO PRINCIPAL */}
+      {/* MAIN CONTENT */}
       <main className="flex-1 flex flex-col overflow-hidden w-full">
         <header className="h-20 bg-real-dark border-b border-white/5 flex items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-4">
-            {/* BOTÓN HAMBURGUESA (Solo visible en móvil) */}
             <button 
               className="md:hidden text-gray-400 hover:text-white p-2"
               onClick={() => setIsSidebarOpen(true)}
