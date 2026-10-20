@@ -15,14 +15,12 @@ export default function Dashboard() {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
-        // 1. Obtener perfil
         const { data: perfil } = await supabase.from('perfiles').select('rol, comunidad_slug').eq('id', session.user.id).maybeSingle();
         
         const role = perfil?.rol || 'lider';
         const comunidad = perfil?.comunidad_slug || '';
         setUserRole(role);
 
-        // 2. Traer eventos (filtrados si no es admin)
         let query = supabase.from('eventos').select('*').order('creado_en', { ascending: false });
         
         if (role !== 'admin' && comunidad) {
@@ -40,6 +38,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
       
+      {/* Cabecera responsive */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="font-serif text-3xl font-bold text-white mb-2">Resumen General</h1>
@@ -47,13 +46,13 @@ export default function Dashboard() {
         </div>
         <Link 
           href="/admin/eventos/crear" 
-          className="flex items-center gap-2 bg-real-purple hover:bg-real-blue text-white px-5 py-2.5 rounded-lg font-medium transition-colors"
+          className="flex items-center justify-center gap-2 bg-real-purple hover:bg-real-blue text-white px-5 py-3 rounded-xl font-medium transition-colors w-full md:w-auto shadow-lg"
         >
           <Plus size={18} /> Nuevo Evento
         </Link>
       </div>
 
-      {/* Tarjetas de Estadísticas */}
+      {/* Tarjetas de Estadísticas (1 columna en celular, 3 en PC) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-real-dark border border-white/5 p-6 rounded-2xl flex items-center gap-4">
           <div className="p-4 bg-real-purple/20 rounded-xl">
@@ -101,9 +100,9 @@ export default function Dashboard() {
         ) : (
           <div className="divide-y divide-white/5">
             {eventos.map((evento) => (
-              <div key={evento.id} className="p-6 flex items-center justify-between hover:bg-white/5 transition-colors">
+              <div key={evento.id} className="p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-white/5 transition-colors">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center text-xs text-gray-400 border border-white/10 overflow-hidden relative">
+                  <div className="w-12 h-12 bg-gray-800 rounded-lg flex-shrink-0 overflow-hidden relative border border-white/10">
                      {evento.cartel_url ? (
                         <img src={evento.cartel_url} alt="Cartel" className="w-full h-full object-cover" />
                      ) : "IMG"}
@@ -113,7 +112,7 @@ export default function Dashboard() {
                     <p className="text-sm text-gray-500">Creado el {new Date(evento.creado_en).toLocaleDateString()}</p>
                   </div>
                 </div>
-                <span className={`px-3 py-1 text-xs font-semibold rounded-full hidden md:block ${evento.estado === 'proximo' ? 'bg-green-500/10 text-green-400' : 'bg-gray-500/10 text-gray-400'}`}>
+                <span className={`px-3 py-1 text-xs font-semibold rounded-full w-fit ${evento.estado === 'proximo' ? 'bg-green-500/10 text-green-400' : 'bg-gray-500/10 text-gray-400'}`}>
                   {evento.estado === 'proximo' ? 'Publicado' : 'Finalizado'}
                 </span>
               </div>

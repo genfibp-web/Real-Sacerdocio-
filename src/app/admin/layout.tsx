@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -12,6 +12,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Estado para el menú móvil
 
   useEffect(() => {
     if (pathname === "/admin") {
@@ -42,6 +43,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     checkUser();
   }, [pathname, router]);
 
+  // Cerrar el menú al cambiar de página en móvil
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [pathname]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/admin");
@@ -50,7 +56,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (pathname === "/admin") return <main className="bg-real-black min-h-screen">{children}</main>;
   if (isLoading) return <div className="min-h-screen bg-real-black flex items-center justify-center text-white">Cargando panel...</div>;
 
-  // 1. Definimos el menú base para todos
   const menuItems = [
     { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
     { name: "Eventos", href: "/admin/eventos", icon: CalendarDays },
@@ -59,19 +64,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Prédicas", href: "/admin/predicas", icon: MessageSquare },
   ];
 
-  // 2. Si el usuario es admin, le agregamos la opción de Usuarios
   if (user?.rol === 'admin') {
     menuItems.push({ name: "Usuarios", href: "/admin/usuarios", icon: Users });
   }
 
   return (
-    <div className="flex h-screen bg-real-black text-white">
-      <aside className="w-64 bg-real-dark border-r border-white/5 flex flex-col">
-        <div className="h-20 flex items-center justify-center border-b border-white/5 px-6">
+    <div className="flex h-screen bg-real-black text-white overflow-hidden">
+      
+      {/* OVERLAY (Fondo oscuro cuando el menú está abierto en móvil) */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 md:hidden" 
+          onClick={() => setIsSidebarOpen(false)}
+        ></div>
+      )}
+
+      {/* SIDEBAR (Menú Lateral) */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-real-dark border-r border-white/5 flex flex-col transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="h-20 flex items-center justify-between border-b border-white/5 px-6">
           <Image src="/logo_Rs.png" alt="Logo" width={80} height={30} className="object-contain" />
+          {/* Botón para cerrar en móvil */}
+          <button className="md:hidden text-gray-400 hover:text-white" onClick={() => setIsSidebarOpen(false)}>
+            <X size={24} />
+          </button>
         </div>
 
-        <nav className="flex-1 py-6 px-4 space-y-2">
+        <nav className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -90,16 +108,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-20 bg-real-dark border-b border-white/5 flex items-center justify-between px-8">
-          <h2 className="text-lg font-medium text-white">Bienvenido, {user?.nombre}</h2>
+      {/* CONTENIDO PRINCIPAL */}
+      <main className="flex-1 flex flex-col overflow-hidden w-full">
+        <header className="h-20 bg-real-dark border-b border-white/5 flex items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-4">
-             <div className="w-10 h-10 bg-real-purple rounded-full flex items-center justify-center font-bold uppercase">
+            {/* BOTÓN HAMBURGUESA (Solo visible en móvil) */}
+            <button 
+              className="md:hidden text-gray-400 hover:text-white p-2"
+              onClick={() => setIsSidebarOpen(true)}
+            >
+              <Menu size={24} />
+            </button>
+            <h2 className="text-base md:text-lg font-medium text-white truncate">Bienvenido, {user?.nombre}</h2>
+          </div>
+          
+          <div className="flex items-center gap-4">
+             <div className="w-10 h-10 bg-real-purple rounded-full flex items-center justify-center font-bold uppercase flex-shrink-0">
                {user?.nombre?.charAt(0) || "L"}
              </div>
           </div>
         </header>
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8">
           {children}
         </div>
       </main>
