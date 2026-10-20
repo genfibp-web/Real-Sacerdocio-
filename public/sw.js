@@ -31,6 +31,17 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // 🛡️ PROTECCIÓN DE SESIÓN: Ignorar peticiones de API, Supabase, y el panel de Admin
+  if (
+    event.request.method !== 'GET' || 
+    event.request.url.includes('/api/') || 
+    event.request.url.includes('supabase.co') ||
+    event.request.url.includes('/admin')
+  ) {
+    return; // Dejar que el navegador haga la petición normal a la red
+  }
+
+  // Estrategia Cache-First solo para imágenes y archivos estáticos
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);
