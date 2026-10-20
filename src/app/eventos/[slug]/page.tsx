@@ -46,24 +46,23 @@ export default async function EventoPage({ params }: { params: Promise<{ slug: s
     notFound();
   }
 
-  // Formateamos la fecha para mostrarla bonita
-  const fecha = new Date(evento.fecha_inicio).toLocaleDateString("es-ES", {
+  // Formateamos la fecha para mostrarla bonita (con el arreglo de zona horaria)
+  const fecha = new Date(evento.fecha_inicio + 'T12:00:00').toLocaleDateString("es-ES", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
   });
 
-  // Preparamos los enlaces mágicos para el espectador
-  // 1. Enlace a Google Maps (usando la ubicación de texto)
-   // Lógica para las coordenadas
+  // Lógica para las coordenadas
   const coordenadasIglesia = "18.44795697205258,-69.01268224147996";
   const esIglesia = evento.ubicacion === "Iglesia Real Sacerdocio";
   
   const googleMapsUrl = esIglesia 
     ? `https://www.google.com/maps/search/?api=1&query=${coordenadasIglesia}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(evento.ubicacion)}`;
-  // 2. Enlace a WhatsApp para pedir informes (¡Cambia el número por el de la iglesia!)
+    
+  // Enlace a WhatsApp para pedir informes
   const whatsappNumber = "1234567890"; // <-- ¡PON AQUÍ EL NÚMERO DE LA IGLESIA!
   const whatsappMessage = encodeURIComponent(`Hola, vi el evento "${evento.titulo}" en la web y quiero más información para asistir.`);
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
@@ -150,7 +149,9 @@ export default async function EventoPage({ params }: { params: Promise<{ slug: s
                     <p className="text-gray-400 text-sm mb-1">Fecha</p>
                     <p className="text-white font-medium capitalize">{fecha}</p>
                     {evento.fecha_fin && (
-                       <p className="text-gray-500 text-sm mt-1">Hasta el {new Date(evento.fecha_fin).toLocaleDateString()}</p>
+                       <p className="text-gray-500 text-sm mt-1">
+                         Hasta el {new Date(evento.fecha_fin + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                       </p>
                     )}
                   </div>
                 </div>
@@ -172,7 +173,6 @@ export default async function EventoPage({ params }: { params: Promise<{ slug: s
                   <div>
                     <p className="text-gray-400 text-sm mb-1">Ubicación</p>
                     <p className="text-white font-medium mb-2">{evento.ubicacion}</p>
-                    {/* NUEVO BOTÓN DE MAPA */}
                     <a 
                       href={googleMapsUrl}
                       target="_blank"

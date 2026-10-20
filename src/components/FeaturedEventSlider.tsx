@@ -16,7 +16,7 @@ export default function FeaturedEventSlider() {
         .select("*")
         .eq("estado", "proximo")
         .eq("aprobado", true)
-        .eq("destacado", true) // <-- FILTRO VITAL: Solo los destacados
+        .eq("destacado", true)
         .order("fecha_inicio", { ascending: true })
         .limit(3);
 
@@ -35,7 +35,6 @@ export default function FeaturedEventSlider() {
     return () => clearInterval(interval);
   }, [eventos]);
 
-  // Si no hay eventos destacados, no muestra nada en el banner
   if (eventos.length === 0) return null; 
 
   return (
@@ -63,7 +62,8 @@ export default function FeaturedEventSlider() {
                     {evento.titulo}
                   </h3>
                   <div className="flex items-center justify-center md:justify-start gap-4 text-sm text-gray-400 mt-1">
-                    <span>{new Date(evento.fecha_inicio).toLocaleDateString("es-ES", { day: "numeric", month: "long" })}</span>
+                    {/* AQUÍ ESTÁ EL ARREGLO DE LA FECHA EN EL BANNER */}
+                    <span>{new Date(evento.fecha_inicio + 'T12:00:00').toLocaleDateString("es-ES", { day: "numeric", month: "long" })}</span>
                     <span>•</span>
                     <span>{evento.ubicacion}</span>
                   </div>
