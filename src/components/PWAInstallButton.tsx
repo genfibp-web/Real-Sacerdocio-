@@ -1,3 +1,4 @@
+cat << 'EOF' > src/components/PWAInstallButton.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -8,7 +9,6 @@ export default function PWAInstallButton() {
   const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
-    // Registrar el Service Worker
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js");
     }
@@ -51,3 +51,4 @@ export default function PWAInstallButton() {
     </button>
   );
 }
+EOF

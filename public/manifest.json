@@ -1,3 +1,4 @@
+cat << 'EOF' > public/manifest.json
 {
   "name": "Real Sacerdocio",
   "short_name": "Real Sacerdocio",
@@ -21,3 +22,4 @@
     }
   ]
 }
+EOF
