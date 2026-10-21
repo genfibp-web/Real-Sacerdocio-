@@ -30,7 +30,7 @@ const comunidades = [
   { 
     name: "Ministerio de Parejas", 
     slug: "parejas", 
-    time: "Viernes", 
+    time: "La Familia es la Base de la Sociedad", 
     image: "/minispareja.webp" 
   },
 ];
