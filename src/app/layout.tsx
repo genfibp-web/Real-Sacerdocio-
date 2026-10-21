@@ -5,7 +5,8 @@ import RealtimeRefresher from "@/components/RealtimeRefresher";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import PWARegister from "@/components/PWARegister";
 import PWARecovery from "@/components/PWARecovery";
-
+import VisitorTracker from "@/components/VisitorTracker"; // <-- 1. IMPORTAMOS EL RADAR
+import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X, Globe, Activity } from "lucide-react";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -46,12 +47,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className="dark">
-      {/* 👇 ESTA ETIQUETA ES LA QUE FALTABA */}
       <head>
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-icon.png" />
       </head>
       
       <body className={`${cinzel.variable} ${inter.variable} font-sans bg-real-black text-white antialiased selection:bg-real-purple`}>
+        <VisitorTracker /> {/* <-- 2. AQUÍ ESTÁ LA MAGIA DEL RADAR */}
         <RealtimeRefresher />
         <PWAInstallPrompt />
         <PWARegister /> 

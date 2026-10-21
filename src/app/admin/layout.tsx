@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X, Globe } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X, Globe, Activity } from "lucide-react"; // <-- Activity agregado
 import { supabase } from "@/lib/supabase";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -65,6 +65,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (user?.rol === 'admin') {
     menuItems.push({ name: "Usuarios", href: "/admin/usuarios", icon: Users });
+    menuItems.push({ name: "Visitantes", href: "/admin/visitantes", icon: Activity }); // <-- NUEVO BOTÓN
   }
 
   return (
@@ -81,7 +82,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* SIDEBAR */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-real-dark border-r border-white/5 flex flex-col transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="h-20 flex items-center justify-between border-b border-white/5 px-6">
-          {/* Logo con animación (opcional) */}
           <div className="logo-perspective">
             <Image src="/logo_Rs.png" alt="Logo" width={80} height={30} className="object-contain animate-logo-spin" />
           </div>
@@ -102,7 +102,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        {/* SECCIÓN INFERIOR: Ir a la web y Cerrar Sesión */}
+        {/* SECCIÓN INFERIOR */}
         <div className="p-4 border-t border-white/5 space-y-2">
           <Link 
             href="/" 
