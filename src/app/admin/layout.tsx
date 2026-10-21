@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-// 👇 Agregamos el ícono Contact
-import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X, Globe, Activity, Contact } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X, Globe, Activity, Contact, DollarSign } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -35,7 +34,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           .single();
           
         setUser({ 
-          id: session.user.id, 
+          id: session.user.id,
           email: session.user.email, 
           nombre: perfil?.nombre || "Líder",
           rol: perfil?.rol || "lider" 
@@ -65,10 +64,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Publicaciones", href: "/admin/publicaciones", icon: FileText }, 
     { name: "Recuerdos", href: "/admin/galeria", icon: ImageIcon }, 
     { name: "Prédicas", href: "/admin/predicas", icon: MessageSquare },
-    { name: "Miembros", href: "/admin/miembros", icon: Contact }, // <-- NUEVA RUTA (Visible para todos)
+    { name: "Miembros", href: "/admin/miembros", icon: Contact },
+    { name: "Finanzas", href: "/admin/finanzas", icon: DollarSign },
   ];
 
-  // 👇 SOLO el Super Admin ve estas opciones técnicas
   if (user?.id === SUPER_ADMIN_ID) {
     menuItems.push({ name: "Usuarios", href: "/admin/usuarios", icon: Users });
     menuItems.push({ name: "Visitantes", href: "/admin/visitantes", icon: Activity });
@@ -76,7 +75,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex h-screen bg-real-black text-white overflow-hidden">
-      {/* OVERLAY */}
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 md:hidden" 
@@ -84,7 +82,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         ></div>
       )}
 
-      {/* SIDEBAR */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-real-dark border-r border-white/5 flex flex-col transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="h-20 flex items-center justify-between border-b border-white/5 px-6">
           <div className="logo-perspective">
@@ -107,7 +104,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        {/* SECCIÓN INFERIOR */}
         <div className="p-4 border-t border-white/5 space-y-2">
           <Link 
             href="/" 
@@ -122,7 +118,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
       <main className="flex-1 flex flex-col overflow-hidden w-full">
         <header className="h-20 bg-real-dark border-b border-white/5 flex items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-4">

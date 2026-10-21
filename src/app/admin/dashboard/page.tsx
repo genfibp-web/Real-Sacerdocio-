@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-import { CalendarDays, Image as ImageIcon, Users, Plus, FileText, Filter } from "lucide-react";
+import { CalendarDays, Image as ImageIcon, Users, Plus, FileText, Filter, DollarSign } from "lucide-react";
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
@@ -16,6 +16,7 @@ export default function AdminDashboard() {
     fotos: 0,
     miembros: 0,
     publicaciones: 0,
+    saldo: 0,
   });
 
   const [recentEvents, setRecentEvents] = useState<any[]>([]);
@@ -48,54 +49,68 @@ export default function AdminDashboard() {
     if (loading || !user) return;
 
     const fetchData = async () => {
-      // Definimos si filtramos o no
-      const filterByCommunity = selectedCommunity !== "all";
-      const communityToFilter = selectedCommunity;
+      const isFiltering = selectedCommunity !== "all";
 
-      // --- CONTADOR DE EVENTOS ---
+      // --- EVENTOS ---
       let queryEventos = supabase.from('eventos').select('*', { count: 'exact', head: true });
-      if (filterByCommunity) queryEventos = queryEventos.eq('comunidad_slug', communityToFilter);
+      if (isFiltering) queryEventos = queryEventos.eq('comunidad_slug', selectedCommunity);
       const { count: countEventos } = await queryEventos;
 
-      // --- CONTADOR DE FOTOS (Galería/Recuerdos) ---
-      // Asumimos que la tabla se llama 'galerias_eventos' o 'fotos'
+      // --- FOTOS (Galería) ---
       let queryFotos = supabase.from('galerias_eventos').select('*', { count: 'exact', head: true });
-      if (filterByCommunity) queryFotos = queryFotos.eq('comunidad_slug', communityToFilter);
+      if (isFiltering) queryFotos = queryFotos.eq('comunidad_slug', selectedCommunity);
       const { count: countFotos } = await queryFotos;
 
-      // --- CONTADOR DE MIEMBROS ---
-            // --- CONTADOR DE MIEMBROS (Desde la nueva tabla) ---
+      // --- PUBLICACIONES ---
+      let queryPublicaciones = supabase.from('publicaciones').select('*', { count: 'exact', head: true });
+      if (isFiltering) queryPublicaciones = queryPublicaciones.eq('comunidad_slug', selectedCommunity);
+      const { count: countPublicaciones } = await queryPublicaciones;
+
+      // --- MIEMBROS ---
       let queryMiembros = supabase.from('miembros').select('*', { count: 'exact', head: true });
-      // Si es líder o si el admin filtró por comunidad
-      if (user.rol === 'lider' || (user.rol === 'admin' && filterByCommunity)) {
-        queryMiembros = queryMiembros.eq('comunidad_slug', filterByCommunity ? communityToFilter : user.comunidad_slug);
-      }
+      if (isFiltering) queryMiembros = queryMiembros.eq('comunidad_slug', selectedCommunity);
       const { count: countMiembros } = await queryMiembros;
 
-      // --- CONTADOR DE PUBLICACIONES ---
-      let queryPublicaciones = supabase.from('publicaciones').select('*', { count: 'exact', head: true });
-      if (filterByCommunity) queryPublicaciones = queryPublicaciones.eq('comunidad_slug', communityToFilter);
-      const { count: countPublicaciones } = await queryPublicaciones;
+      // --- FINANZAS (Saldo) ---
+      let queryFinanzas = supabase.from('transacciones').select('tipo, monto');
+      if (isFiltering) queryFinanzas = queryFinanzas.eq('comunidad_slug', selectedCommunity);
+      const { data: transacciones } = await queryFinanzas;
+      
+      const ingresos = transacciones?.filter(t => t.tipo === 'ingreso').reduce((acc, t) => acc + Number(t.monto), 0) || 0;
+      const egresos = transacciones?.filter(t => t.tipo === 'egreso').reduce((acc, t) => acc + Number(t.monto), 0) || 0;
+      const saldoTotal = ingresos - egresos;
 
       setStats({
         eventos: countEventos || 0,
         fotos: countFotos || 0,
-        miembros: countMiembros || 0,
         publicaciones: countPublicaciones || 0,
+        miembros: countMiembros || 0,
+        saldo: saldoTotal,
       });
 
-      // --- EVENTOS RECIENTES (Para la lista de abajo) ---
-      let queryRecent = supabase.from('eventos').select('*').order('created_at', { ascending: false }).limit(5);
-      if (filterByCommunity) queryRecent = queryRecent.eq('comunidad_slug', communityToFilter);
-      const { data: eventsData } = await queryRecent;
+      // --- EVENTOS RECIENTES ---
+      let queryRecent = supabase
+        .from('eventos')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (isFiltering) {
+        queryRecent = queryRecent.eq('comunidad_slug', selectedCommunity);
+      }
       
+      const { data: eventsData } = await queryRecent;
       if (eventsData) setRecentEvents(eventsData);
     };
 
     fetchData();
   }, [user, selectedCommunity, loading]);
 
-  if (loading) return <div className="text-white">Cargando dashboard...</div>;
+  const formatMoney = (amount: number) => {
+    return new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(amount);
+  };
+
+  if (loading) return <div className="text-white p-8">Cargando dashboard...</div>;
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -116,16 +131,19 @@ export default function AdminDashboard() {
           {user?.rol === 'admin' && (
             <div className="flex items-center gap-2 bg-real-dark border border-white/10 px-3 py-2 rounded-xl text-sm">
               <Filter size={16} className="text-gray-400" />
+              
+              {/* FIX: Fondo oscuro en el select y las opciones */}
               <select 
                 value={selectedCommunity} 
                 onChange={(e) => setSelectedCommunity(e.target.value)}
-                className="bg-transparent text-white outline-none cursor-pointer"
+                className="bg-real-dark text-white outline-none cursor-pointer capitalize"
               >
-                <option value="all">Todas las comunidades</option>
-                <option value="jovenes">Jóvenes</option>
-                <option value="caballeros">Caballeros</option>
-                <option value="damas">Damas</option>
-                <option value="ninos">Niños</option>
+                <option value="all" className="bg-real-dark text-white">Todas las comunidades</option>
+                <option value="general" className="bg-real-dark text-white">Fondo General</option>
+                <option value="jovenes" className="bg-real-dark text-white">Jóvenes</option>
+                <option value="caballeros" className="bg-real-dark text-white">Caballeros</option>
+                <option value="damas" className="bg-real-dark text-white">Damas</option>
+                <option value="ninos" className="bg-real-dark text-white">Niños</option>
               </select>
             </div>
           )}
@@ -140,45 +158,58 @@ export default function AdminDashboard() {
       </div>
 
       {/* TARJETAS DE ESTADÍSTICAS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         
-        <div className="bg-real-dark border border-white/5 p-6 rounded-2xl flex items-center gap-4">
+        <div className="bg-real-dark border border-white/5 p-6 rounded-2xl flex flex-col justify-center items-center text-center gap-3">
           <div className="w-12 h-12 bg-real-purple/10 text-real-purple rounded-xl flex items-center justify-center">
             <CalendarDays size={24} />
           </div>
           <div>
-            <p className="text-sm text-gray-400">Eventos Activos</p>
             <h3 className="text-2xl font-bold text-white">{stats.eventos}</h3>
+            <p className="text-xs text-gray-400 uppercase tracking-wide mt-1">Eventos</p>
           </div>
         </div>
 
-        <div className="bg-real-dark border border-white/5 p-6 rounded-2xl flex items-center gap-4">
+        <div className="bg-real-dark border border-white/5 p-6 rounded-2xl flex flex-col justify-center items-center text-center gap-3">
           <div className="w-12 h-12 bg-blue-500/10 text-blue-400 rounded-xl flex items-center justify-center">
             <ImageIcon size={24} />
           </div>
           <div>
-            <p className="text-sm text-gray-400">Fotos en Galería</p>
             <h3 className="text-2xl font-bold text-white">{stats.fotos}</h3>
+            <p className="text-xs text-gray-400 uppercase tracking-wide mt-1">Fotos</p>
           </div>
         </div>
 
-        <div className="bg-real-dark border border-white/5 p-6 rounded-2xl flex items-center gap-4">
+        <div className="bg-real-dark border border-white/5 p-6 rounded-2xl flex flex-col justify-center items-center text-center gap-3">
           <div className="w-12 h-12 bg-green-500/10 text-green-400 rounded-xl flex items-center justify-center">
             <FileText size={24} />
           </div>
           <div>
-            <p className="text-sm text-gray-400">Publicaciones</p>
             <h3 className="text-2xl font-bold text-white">{stats.publicaciones}</h3>
+            <p className="text-xs text-gray-400 uppercase tracking-wide mt-1">Publicaciones</p>
           </div>
         </div>
 
-        <div className="bg-real-dark border border-white/5 p-6 rounded-2xl flex items-center gap-4">
-          <div className="w-12 h-12 bg-real-gold/10 text-real-gold rounded-xl flex items-center justify-center">
+        <div className="bg-real-dark border border-white/5 p-6 rounded-2xl flex flex-col justify-center items-center text-center gap-3">
+          <div className="w-12 h-12 bg-orange-500/10 text-orange-400 rounded-xl flex items-center justify-center">
             <Users size={24} />
           </div>
           <div>
-            <p className="text-sm text-gray-400">Miembros Registrados</p>
             <h3 className="text-2xl font-bold text-white">{stats.miembros}</h3>
+            <p className="text-xs text-gray-400 uppercase tracking-wide mt-1">Miembros</p>
+          </div>
+        </div>
+
+        {/* TARJETA DE SALDO FINANCIERO */}
+        <div className="bg-real-dark border border-real-gold/30 p-6 rounded-2xl flex flex-col justify-center items-center text-center gap-3 bg-gradient-to-br from-real-dark to-real-gold/5">
+          <div className="w-12 h-12 bg-real-gold/10 text-real-gold rounded-xl flex items-center justify-center">
+            <DollarSign size={24} />
+          </div>
+          <div>
+            <h3 className={`text-xl font-bold ${stats.saldo >= 0 ? 'text-real-gold' : 'text-red-400'}`}>
+              {formatMoney(stats.saldo)}
+            </h3>
+            <p className="text-xs text-gray-400 uppercase tracking-wide mt-1">Saldo en Caja</p>
           </div>
         </div>
 
@@ -186,12 +217,13 @@ export default function AdminDashboard() {
 
       {/* EVENTOS RECIENTES */}
       <div className="bg-real-dark border border-white/5 rounded-2xl overflow-hidden">
-        <div className="p-6 border-b border-white/5">
+        <div className="p-6 border-b border-white/5 flex justify-between items-center">
           <h2 className="text-xl font-bold text-white">Eventos Recientes</h2>
+          <Link href="/admin/eventos" className="text-sm text-real-purple hover:text-white transition-colors">Ver todos</Link>
         </div>
         <div className="divide-y divide-white/5">
           {recentEvents.length === 0 ? (
-            <p className="p-6 text-gray-400 text-center">No hay eventos para esta comunidad.</p>
+            <p className="p-6 text-gray-400 text-center">No se encontraron eventos.</p>
           ) : (
             recentEvents.map((event) => (
               <div key={event.id} className="p-6 flex items-center justify-between hover:bg-white/5 transition-colors">
@@ -205,7 +237,9 @@ export default function AdminDashboard() {
                   )}
                   <div>
                     <h4 className="text-white font-medium">{event.titulo}</h4>
-                    <p className="text-xs text-gray-500">Creado el {new Date(event.created_at).toLocaleDateString()}</p>
+                    <p className="text-xs text-gray-500 capitalize">
+                      {event.comunidad_slug || 'General'} • {new Date(event.created_at).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
                 <div>
