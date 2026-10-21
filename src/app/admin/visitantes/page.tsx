@@ -30,10 +30,10 @@ export default function VisitantesPage() {
   }, []);
 
   return (
-    // ... (el resto de tu JSX se queda igual)
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">Radar en Vivo</h1>
+        
         <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-2 ${conectado ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
           <span className={`w-2 h-2 rounded-full ${conectado ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
           {conectado ? 'En Línea' : 'Desconectado'}
@@ -47,14 +47,18 @@ export default function VisitantesPage() {
       ) : (
         <div className="grid gap-4">
           <p className="text-sm text-gray-400">
-            Personas navegando ahora ({visitantesActivos.length}):
+            Dispositivos conectados ({visitantesActivos.length}):
           </p>
           {visitantesActivos.map((v, index) => (
             <div key={index} className="bg-real-dark p-4 rounded-xl border border-white/5 flex flex-col gap-1">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-white">
-                  📱 {v.device || "Dispositivo desconocido"} {v.isPWA && "(App Instalada)"}
-                </p>
+                <div className="flex items-center gap-2">
+                  {/* Indicador de ACTIVO (Verde) o INACTIVO (Gris) */}
+                  <span className={`w-3 h-3 rounded-full ${v.isFocused ? 'bg-green-500' : 'bg-gray-500'}`}></span>
+                  <p className="text-sm font-medium text-white">
+                    📱 {v.device || "Dispositivo"}
+                  </p>
+                </div>
                 <span className="text-xs font-mono text-real-gold bg-real-gold/10 px-2 py-1 rounded">
                   ID: {v.deviceId ? `${v.deviceId.substring(0, 8)}...` : "Desconocido"}
                 </span>
@@ -63,7 +67,7 @@ export default function VisitantesPage() {
                 Viendo: <span className="text-real-purple font-medium">{v.currentPage}</span>
               </p>
               <p className="text-xs text-gray-500">
-                Conectado a las: {new Date(v.joinedAt).toLocaleTimeString()}
+                {v.isFocused ? "🟢 Navegando ahora" : "⚪ En otra pestaña / minimizado"}
               </p>
             </div>
           ))}

@@ -9,10 +9,7 @@ export default function VisitorTracker() {
   const [sessionId] = useState(() => Math.random().toString(36).substring(7));
 
   useEffect(() => {
-    // Bloqueamos el tracker si estamos en el admin
-    if (pathname.startsWith('/admin')) {
-      return;
-    }
+    if (pathname.startsWith('/admin')) return;
 
     const userAgent = navigator.userAgent;
     const isMobile = /mobile|iphone|ipad|android/i.test(userAgent);
@@ -33,24 +30,23 @@ export default function VisitorTracker() {
       localStorage.setItem("rs_device_id", deviceId);
     }
 
+    // Guardar historial en DB (opcional, puedes dejarlo)
     const saveVisit = async () => {
-      await supabase.from('visitas').insert([
-        {
-          user_agent: `${device} - PWA: ${isPWA} - Página: ${pathname}`,
-          device_id: deviceId,
-        }
-      ]);
+      await supabase.from('visitas').insert([{
+        user_agent: `${device} - PWA: ${isPWA} - Página: ${pathname}`,
+        device_id: deviceId,
+      }]);
     };
-
     saveVisit();
 
-    // Canal compartido
+    // Canal de Presence
     const channel = supabase.channel('global-visitors', {
       config: { presence: { key: sessionId } },
     });
 
-    channel.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
+    // Función para entrar a la lista
+    const enterRadar = async () => {
+      if (channel.state === 'joined') {
         await channel.track({
           device: device,
           isPWA: isPWA,
@@ -59,9 +55,36 @@ export default function VisitorTracker() {
           joinedAt: new Date().toISOString(),
         });
       }
+    };
+
+    // Función para SALIR de la lista
+    const leaveRadar = async () => {
+      if (channel.state === 'joined') {
+        await channel.untrack(); // <-- AQUÍ ESTÁ LA MAGIA: Nos borra del radar
+      }
+    };
+
+    channel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await enterRadar();
+      }
     });
 
-    return () => { supabase.removeChannel(channel); };
+    // Detectar si el usuario cambia de pestaña o minimiza
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        enterRadar(); // Volvió: Aparece en el radar
+      } else {
+        leaveRadar(); // Se fue: Desaparece del radar
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => { 
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      supabase.removeChannel(channel); 
+    };
   }, [pathname, sessionId]);
 
   return null;
