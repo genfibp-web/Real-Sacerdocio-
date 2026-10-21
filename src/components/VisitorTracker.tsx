@@ -18,19 +18,27 @@ export default function VisitorTracker() {
     else if (/android/i.test(userAgent)) device = "Android";
     else if (isMobile) device = "Móvil";
 
-    // 1. GUARDAR EN LA BASE DE DATOS (Para el historial del panel)
+    // 1. OBTENER O CREAR LA IDENTIDAD DEL DISPOSITIVO
+    let deviceId = localStorage.getItem("rs_device_id");
+    if (!deviceId) {
+      // Si es su primera vez, creamos un ID único (ej: "a1b2c3d4-e5f6...")
+      deviceId = crypto.randomUUID(); 
+      localStorage.setItem("rs_device_id", deviceId);
+    }
+
+    // 2. GUARDAR EN LA BASE DE DATOS
     const saveVisit = async () => {
-      const { error } = await supabase.from('visitas').insert([
+      await supabase.from('visitas').insert([
         {
           user_agent: `${device} - PWA: ${isPWA} - Página: ${pathname}`,
+          device_id: deviceId, // <-- AQUÍ GUARDAMOS LA IDENTIDAD
         }
       ]);
-      if (error) console.error("Error guardando visita:", error);
     };
 
     saveVisit();
 
-    // 2. MANTENER EL PRESENCE (Por si luego quieres un radar en vivo)
+    // 3. MANTENER EL PRESENCE (Radar en vivo)
     const channel = supabase.channel('global-visitors', {
       config: { presence: { key: sessionId } },
     });
@@ -41,6 +49,7 @@ export default function VisitorTracker() {
           device: device,
           isPWA: isPWA,
           currentPage: pathname,
+          deviceId: deviceId, // También lo enviamos al radar en vivo
           joinedAt: new Date().toISOString(),
         });
       }

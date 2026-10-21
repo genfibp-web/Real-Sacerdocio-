@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+// ESTA LÍNEA ES LA QUE ARREGLA EL ERROR EN VERCEL
+export const dynamic = 'force-dynamic';
+
 export default function VisitantesPage() {
   const [visitantesActivos, setVisitantesActivos] = useState<any[]>([]);
   const [conectado, setConectado] = useState(false);
@@ -55,11 +58,17 @@ export default function VisitantesPage() {
           </p>
           {visitantesActivos.map((v, index) => (
             <div key={index} className="bg-real-dark p-4 rounded-xl border border-white/5 flex flex-col gap-1">
-              <p className="text-sm font-medium text-white">
-                📱 {v.device || "Dispositivo desconocido"} {v.isPWA && "(App Instalada)"}
-              </p>
-              <p className="text-xs text-gray-400">
-                Viendo: <span className="text-real-purple">{v.currentPage}</span>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-white">
+                  📱 {v.device || "Dispositivo desconocido"} {v.isPWA && "(App Instalada)"}
+                </p>
+                {/* Mostramos el ID del dispositivo (primeros 8 caracteres) */}
+                <span className="text-xs font-mono text-real-gold bg-real-gold/10 px-2 py-1 rounded">
+                  ID: {v.deviceId ? `${v.deviceId.substring(0, 8)}...` : "Desconocido"}
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">
+                Viendo: <span className="text-real-purple font-medium">{v.currentPage}</span>
               </p>
               <p className="text-xs text-gray-500">
                 Conectado a las: {new Date(v.joinedAt).toLocaleTimeString()}
