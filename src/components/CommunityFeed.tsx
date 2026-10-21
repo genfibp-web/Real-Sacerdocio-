@@ -15,12 +15,13 @@ export default function CommunityFeed({ publicaciones }: { publicaciones: any[] 
     await supabase.from('publicaciones').update({ likes: currentLikes + 1 }).eq('id', id);
   };
 
-  // Función auxiliar para convertir cualquier imagen a JPG (Blob)
+  // FUNCIÓN CON MARCA DE AGUA
   const getJpegBlob = (url: string): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const img = new window.Image();
       img.crossOrigin = "anonymous";
       img.src = url;
+      
       img.onload = () => {
         const canvas = document.createElement("canvas");
         canvas.width = img.width;
@@ -28,20 +29,57 @@ export default function CommunityFeed({ publicaciones }: { publicaciones: any[] 
         const ctx = canvas.getContext("2d");
         if (!ctx) return reject("No se pudo crear el canvas");
         
-        ctx.fillStyle = "#FFFFFF"; // Fondo blanco para JPG
+        // 1. Fondo blanco (para las fotos con transparencia)
+        ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
         
-        canvas.toBlob((blob) => {
-          if (blob) resolve(blob);
-          else reject("Error al crear el blob");
-        }, "image/jpeg", 0.95);
+        // 2. Dibujar la foto original
+        ctx.drawImage(img, 0, 0);
+
+        // 3. Cargar y dibujar la marca de agua (Logo)
+        const watermark = new window.Image();
+        watermark.src = "/logo_Rs.png"; // <-- Tu logo en la carpeta public
+        
+        watermark.onload = () => {
+          // Calculamos el tamaño del logo (aprox 15% del ancho de la foto)
+          const watermarkWidth = img.width * 0.15;
+          const watermarkHeight = (watermark.height / watermark.width) * watermarkWidth;
+          
+          // Margen desde la esquina inferior derecha (aprox 3% de la foto)
+          const padding = img.width * 0.03; 
+          
+          const x = canvas.width - watermarkWidth - padding;
+          const y = canvas.height - watermarkHeight - padding;
+
+          // Opacidad para que se vea elegante (no tapa la foto)
+          ctx.globalAlpha = 0.7; 
+          
+          // Dibujamos el logo
+          ctx.drawImage(watermark, x, y, watermarkWidth, watermarkHeight);
+          
+          // Restauramos la opacidad
+          ctx.globalAlpha = 1.0; 
+
+          // 4. Exportar la imagen final como JPG
+          canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+            else reject("Error al crear el blob");
+          }, "image/jpeg", 0.95);
+        };
+        
+        // Si por alguna razón el logo no carga, descargamos la foto sin marca de agua para no fallar
+        watermark.onerror = () => {
+          console.error("No se pudo cargar la marca de agua");
+          canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+            else reject("Error al crear el blob");
+          }, "image/jpeg", 0.95);
+        };
       };
       img.onerror = reject;
     });
   };
 
-  // NUEVA FUNCIÓN: Guarda en la galería usando el menú nativo del celular
   const handleDownloadSingle = async (url: string, filename: string, id: string) => {
     setDownloadingId(id);
     try {
@@ -49,7 +87,6 @@ export default function CommunityFeed({ publicaciones }: { publicaciones: any[] 
       const fileName = filename.replace(/\.[^/.]+$/, "") + ".jpg";
       const file = new File([blob], fileName, { type: 'image/jpeg' });
 
-      // Si el dispositivo soporta el menú nativo de compartir (Móviles/PWA)
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
@@ -57,7 +94,6 @@ export default function CommunityFeed({ publicaciones }: { publicaciones: any[] 
           text: 'Guarda esta imagen en tu galería'
         });
       } else {
-        // Si es computadora, se descarga normal
         const jpgUrl = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = jpgUrl;
@@ -74,7 +110,6 @@ export default function CommunityFeed({ publicaciones }: { publicaciones: any[] 
     }
   };
 
-  // DESCARGA COMPLETA EN ZIP
   const handleDownloadZip = async (post: any) => {
     setDownloadingId(`zip-${post.id}`);
     try {
