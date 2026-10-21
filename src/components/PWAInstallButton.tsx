@@ -8,24 +8,36 @@ export default function PWAInstallButton() {
   const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
+    // Registrar el Service Worker
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js");
+    }
+
     const userAgent = window.navigator.userAgent.toLowerCase();
     setIsIOS(/iphone|ipad|ipod/.test(userAgent));
 
-    window.addEventListener("beforeinstallprompt", (e) => {
+    const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-    });
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
   }, []);
 
   const handleInstall = async () => {
     if (isIOS) {
-      alert("Para instalar en iPhone:\n1. Toca el botón 'Compartir' (el cuadro con la flecha).\n2. Selecciona 'Añadir a pantalla de inicio'.");
-    } else if (deferredPrompt) {
+      alert("Para instalar en iPhone:\n1. Toca 'Compartir'.\n2. Selecciona 'Añadir a pantalla de inicio'.");
+      return;
+    }
+    
+    if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === "accepted") setDeferredPrompt(null);
     } else {
-      alert("Tu navegador no soporta la instalación directa. Puedes añadir esta página a tu pantalla de inicio desde el menú de tu navegador.");
+      alert("Chrome aún no detecta la app. Asegúrate de estar en HTTPS, que el manifest sea válido y espera unos segundos.");
     }
   };
 
