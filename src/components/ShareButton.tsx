@@ -8,28 +8,23 @@ export default function ShareButton({ titulo }: { titulo: string }) {
 
   const handleShare = async () => {
     try {
-      // 1. Intentar usar la API nativa (Celulares)
       if (navigator.share) {
         await navigator.share({
           title: titulo,
-          text: `¡No te pierdas ${titulo}!`,
+          text: `¡Mira esta publicación de Real Sacerdocio: ${titulo}!`,
           url: window.location.href,
         });
       } else {
-        // 2. Si no hay API nativa (PC), copiamos al portapapeles
         await navigator.clipboard.writeText(window.location.href);
         setCopied(true);
-        setTimeout(() => setCopied(false), 3000); // Vuelve al estado normal tras 3s
+        setTimeout(() => setCopied(false), 3000);
       }
     } catch (error) {
-      console.log("Compartir cancelado o fallido, intentando copiar...");
-      // 3. Si el usuario cancela o falla, forzamos la copia en PC
       try {
         await navigator.clipboard.writeText(window.location.href);
         setCopied(true);
         setTimeout(() => setCopied(false), 3000);
       } catch (err) {
-        // Fallback extremo por si el navegador bloquea el portapapeles
         alert("Copia este enlace para compartir: " + window.location.href);
       }
     }
@@ -38,10 +33,10 @@ export default function ShareButton({ titulo }: { titulo: string }) {
   return (
     <button
       onClick={handleShare}
-      className={`w-full py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+      className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all w-full md:w-auto ${
         copied 
           ? "bg-green-500 text-white" 
-          : "bg-gradient-to-r from-real-purple to-real-blue hover:from-real-blue hover:to-real-purple text-white"
+          : "bg-real-purple hover:bg-real-blue text-white"
       }`}
     >
       {copied ? (
@@ -52,7 +47,7 @@ export default function ShareButton({ titulo }: { titulo: string }) {
       ) : (
         <>
           <Share2 size={18} />
-          Compartir Evento
+          Compartir Publicación
         </>
       )}
     </button>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { convertToWebP } from "@/lib/imageUtils";
-import { Plus, Loader2, ArrowLeft, Image as ImageIcon, CheckCircle, AlertTriangle, X, Trash2, FileText } from "lucide-react";
+import { Plus, Loader2, ArrowLeft, Image as ImageIcon, CheckCircle, AlertTriangle, X, Trash2, FileText, Edit } from "lucide-react";
 import Link from "next/link";
 
 export default function PublicacionesAdmin() {
@@ -58,7 +58,6 @@ export default function PublicacionesAdmin() {
       let imagen_url = null;
       let pdf_url = null;
 
-      // 1. Subir Imagen (si existe)
       if (imagen) {
         let fileFinal = imagen;
         try { fileFinal = await convertToWebP(imagen); } catch (e) { console.warn("Usando original"); }
@@ -71,7 +70,6 @@ export default function PublicacionesAdmin() {
         imagen_url = publicUrl;
       }
 
-      // 2. Subir PDF (si existe)
       if (pdfFile) {
         const pdfName = `documento-${Date.now()}.pdf`;
         const { error: uploadPdfError } = await supabase.storage.from('recuerdos').upload(pdfName, pdfFile);
@@ -81,7 +79,6 @@ export default function PublicacionesAdmin() {
         pdf_url = publicUrl;
       }
 
-      // 3. Guardar en base de datos
       const { error } = await supabase.from('noticias').insert([{
         comunidad_slug: comunidadSlug,
         titulo,
@@ -146,6 +143,7 @@ export default function PublicacionesAdmin() {
                 <option value="caballeros">Caballeros</option>
                 <option value="damas">Damas</option>
                 <option value="ninos">Niños</option>
+                <option value="parejas">Parejas</option>
                 <option value="general">General</option>
               </select>
             </div>
@@ -166,7 +164,6 @@ export default function PublicacionesAdmin() {
               {preview && <img src={preview} alt="Preview" className="w-full h-32 object-cover rounded-lg mt-2" />}
             </div>
 
-            {/* NUEVO CAMPO PARA PDF */}
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-400">Documento PDF (Opcional)</label>
               <div className="relative">
@@ -197,8 +194,6 @@ export default function PublicacionesAdmin() {
                     <span className="text-[10px] font-bold uppercase tracking-wider text-real-gold bg-real-gold/10 px-2 py-1 rounded-md mb-2 inline-block">
                       {noticia.comunidad_slug}
                     </span>
-                    
-                    {/* AQUÍ ESTÁ EL ARREGLO DE LA FECHA */}
                     <span className="text-xs text-gray-500">
                       {new Date(noticia.creado_en).toLocaleDateString('es-ES', { 
                         timeZone: 'America/Santo_Domingo', 
@@ -216,9 +211,21 @@ export default function PublicacionesAdmin() {
                     </span>
                   )}
                 </div>
-                <button onClick={() => setNoticiaToDelete(noticia)} className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg self-start">
-                  <Trash2 size={18} />
-                </button>
+                
+                {/* BOTONES DE ACCIÓN */}
+                <div className="flex flex-col gap-2">
+                  <Link 
+                    href={`/admin/publicaciones/editar/${noticia.id}`} 
+                    className="p-2 bg-white/5 text-gray-300 hover:bg-white/10 rounded-lg transition-colors"
+                    title="Editar publicación"
+                  >
+                    <Edit size={18} />
+                  </Link>
+                  
+                  <button onClick={() => setNoticiaToDelete(noticia)} className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors" title="Eliminar publicación">
+                    <Trash2 size={18} />
+                  </button>
+                </div>
               </div>
             ))
           )}

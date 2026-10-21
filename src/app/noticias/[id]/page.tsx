@@ -3,11 +3,37 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ShareButton from "@/components/ShareButton";
 import { ArrowLeft, CalendarDays, FileText } from "lucide-react";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 
 export const dynamic = 'force-dynamic';
 
+// 1. METADATOS DINÁMICOS (Para que se vea bien en WhatsApp)
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  
+  const { data: noticia } = await supabase
+    .from("noticias")
+    .select("titulo, contenido, imagen_url")
+    .eq("id", id)
+    .single();
+
+  if (!noticia) return { title: "Publicación no encontrada" };
+
+  return {
+    title: `${noticia.titulo} | Real Sacerdocio`,
+    description: noticia.contenido.substring(0, 150) + "...",
+    openGraph: {
+      title: noticia.titulo,
+      description: noticia.contenido.substring(0, 150) + "...",
+      images: noticia.imagen_url ? [noticia.imagen_url] : [],
+    },
+  };
+}
+
+// 2. LA PÁGINA
 export default async function NoticiaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
@@ -28,7 +54,7 @@ export default async function NoticiaPage({ params }: { params: Promise<{ id: st
     <main className="min-h-screen flex flex-col bg-real-black">
       <Navbar />
 
-      {/* Hero con Imagen de Fondo (Protegida) */}
+      {/* Hero con Imagen de Fondo */}
       <section className="relative h-[50vh] min-h-[400px] flex items-end justify-center pb-12 pt-24">
         <div className="absolute inset-0 z-0">
           {noticia.imagen_url ? (
@@ -44,8 +70,8 @@ export default async function NoticiaPage({ params }: { params: Promise<{ id: st
         </div>
 
         <div className="relative z-10 w-full max-w-5xl mx-auto px-6">
-          <Link href="/#comunidades" className="inline-flex items-center text-gray-400 hover:text-white mb-6 transition-colors">
-            <ArrowLeft size={18} className="mr-2" /> Volver a Comunidades
+          <Link href="/feed" className="inline-flex items-center text-gray-400 hover:text-white mb-6 transition-colors">
+            <ArrowLeft size={18} className="mr-2" /> Volver al Feed
           </Link>
           
           <div className="flex items-center gap-3 mb-4">
@@ -78,12 +104,17 @@ export default async function NoticiaPage({ params }: { params: Promise<{ id: st
                 href={noticia.pdf_url} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 bg-real-purple hover:bg-real-blue text-white px-8 py-4 rounded-xl font-semibold transition-all w-full md:w-auto shadow-lg"
+                className="inline-flex items-center justify-center gap-2 bg-real-purple/10 hover:bg-real-purple text-real-purple hover:text-white border border-real-purple/30 px-8 py-4 rounded-xl font-semibold transition-all w-full md:w-auto"
               >
                 <FileText size={20} /> Ver Documento (PDF)
               </a>
             </div>
           )}
+
+          {/* BOTÓN DE COMPARTIR */}
+          <div className="mt-12 pt-8 border-t border-white/10 flex justify-center md:justify-start">
+            <ShareButton titulo={noticia.titulo} />
+          </div>
 
         </div>
       </section>
