@@ -1,76 +1,50 @@
-"use client";
+import Navbar from "@/components/Navbar";
+import Hero from "@/components/Hero";
+import About from "@/components/About";
+import FeaturedEventSlider from "@/components/FeaturedEventSlider";
+import CommunityGrid from "@/components/CommunityGrid";
+import EventsSlider from "@/components/EventsSlider";
+import Sermon from "@/components/Sermon";
+import Footer from "@/components/Footer";
+import Link from "next/link";
+import { Play } from "lucide-react";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-
-export const dynamic = 'force-dynamic';
-
-export default function VisitantesPage() {
-  const [visitantesActivos, setVisitantesActivos] = useState<any[]>([]);
-  const [conectado, setConectado] = useState(false);
-
-  useEffect(() => {
-    const channel = supabase.channel('global-visitors');
-
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState();
-        const usuarios = Object.values(state).flat();
-        setVisitantesActivos(usuarios);
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          setConectado(true);
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
+export default function Home() {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Radar en Vivo</h1>
-        
-        <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-2 ${conectado ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-          <span className={`w-2 h-2 rounded-full ${conectado ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
-          {conectado ? 'En Línea' : 'Desconectado'}
+    <main className="min-h-screen flex flex-col overflow-hidden bg-real-black">
+      <Navbar />
+      <Hero />
+      <About />
+      
+      {/* SECCIÓN DE EVENTO DESTACADO */}
+      <section className="py-12 bg-real-black relative border-y border-white/5">
+        <div className="max-w-7xl mx-auto px-6 text-center mb-8">
+          <h2 className="font-serif text-3xl font-bold text-white mb-2">No te lo pierdas</h2>
+          <div className="w-16 h-1 bg-real-purple mx-auto"></div>
         </div>
-      </div>
+        <FeaturedEventSlider />
+      </section>
 
-      {visitantesActivos.length === 0 ? (
-        <div className="bg-real-dark p-8 rounded-xl border border-white/5 text-center">
-          <p className="text-gray-400">No hay nadie mirando la web en este momento.</p>
+      <CommunityGrid />
+
+      {/* NUEVO BOTÓN DE PRÉDICAS */}
+      <section className="py-16 md:py-20 bg-real-black relative flex flex-col items-center justify-center border-b border-white/5">
+        <div className="text-center mb-6">
+          <h3 className="font-serif text-2xl md:text-3xl font-bold text-white mb-2">¿Te perdiste el mensaje?</h3>
+          <p className="text-gray-400 text-sm md:text-base">Escucha y revive las prédicas de nuestra iglesia.</p>
         </div>
-      ) : (
-        <div className="grid gap-4">
-          <p className="text-sm text-gray-400">
-            Personas realmente activas ({visitantesActivos.length}):
-          </p>
-          {visitantesActivos.map((v, index) => (
-            <div key={index} className="bg-real-dark p-4 rounded-xl border border-white/5 flex flex-col gap-1">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-white flex items-center gap-2">
-                  {/* AQUÍ ESTÁ LA LUZ VERDE QUE PEDISTE */}
-                  <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
-                  📱 {v.device || "Dispositivo"}
-                </p>
-                <span className="text-xs font-mono text-real-gold bg-real-gold/10 px-2 py-1 rounded">
-                  ID: {v.deviceId ? `${v.deviceId.substring(0, 8)}...` : "Desconocido"}
-                </span>
-              </div>
-              <p className="text-xs text-gray-400 mt-2">
-                Viendo: <span className="text-real-purple font-medium">{v.currentPage}</span>
-              </p>
-              <p className="text-xs text-gray-500">
-                En línea desde: {new Date(v.joinedAt).toLocaleTimeString()}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+        <Link 
+          href="/predicas"
+          className="inline-flex items-center gap-3 bg-gradient-to-r from-real-purple to-real-blue hover:from-real-blue hover:to-real-purple text-white px-8 py-4 md:px-10 md:py-5 rounded-full font-bold text-base md:text-lg transition-all transform hover:scale-105 shadow-[0_0_30px_rgba(76,29,149,0.4)]"
+        >
+          Ver todas las Prédicas
+          <Play size={20} fill="white" />
+        </Link>
+      </section>
+
+      <EventsSlider />
+      <Sermon />
+      <Footer />
+    </main>
   );
 }
