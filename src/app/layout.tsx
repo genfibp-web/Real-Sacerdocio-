@@ -5,7 +5,7 @@ import RealtimeRefresher from "@/components/RealtimeRefresher";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import PWARegister from "@/components/PWARegister";
 import PWARecovery from "@/components/PWARecovery";
-import VisitorTracker from "@/components/VisitorTracker"; // <-- 1. IMPORTAMOS EL RADAR
+import VisitorTracker from "@/components/VisitorTracker"; 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -29,6 +29,10 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "Real Sacerdocio",
   },
+  // 👇 VERIFICACIÓN DE GOOGLE AGREGADA AQUÍ 👇
+  verification: {
+    google: "0lzFyi6AIM2If3E5iGa5sX3pYKt8UXxEP_8UmO09Fas",
+  },
 };
 
 export const viewport: Viewport = {
@@ -51,7 +55,7 @@ export default function RootLayout({
       </head>
       
       <body className={`${cinzel.variable} ${inter.variable} font-sans bg-real-black text-white antialiased selection:bg-real-purple`}>
-        <VisitorTracker /> {/* <-- 2. AQUÍ ESTÁ LA MAGIA DEL RADAR */}
+        <VisitorTracker /> 
         <RealtimeRefresher />
         <PWAInstallPrompt />
         <PWARegister /> 
