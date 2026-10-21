@@ -18,10 +18,13 @@ export default function VisitorTracker() {
     else if (/android/i.test(userAgent)) device = "Android";
     else if (isMobile) device = "Móvil";
 
-    // 1. OBTENER O CREAR LA IDENTIDAD DEL DISPOSITIVO
-    let deviceId = localStorage.getItem("rs_device_id");
-    if (!deviceId) {
-      // Si es su primera vez, creamos un ID único (ej: "a1b2c3d4-e5f6...")
+    // 1. OBTENER O CREAR LA IDENTIDAD DEL DISPOSITIVO (Corregido para TypeScript)
+    let deviceId: string;
+    const storedId = localStorage.getItem("rs_device_id");
+    
+    if (storedId) {
+      deviceId = storedId;
+    } else {
       deviceId = crypto.randomUUID(); 
       localStorage.setItem("rs_device_id", deviceId);
     }
@@ -31,7 +34,7 @@ export default function VisitorTracker() {
       await supabase.from('visitas').insert([
         {
           user_agent: `${device} - PWA: ${isPWA} - Página: ${pathname}`,
-          device_id: deviceId, // <-- AQUÍ GUARDAMOS LA IDENTIDAD
+          device_id: deviceId,
         }
       ]);
     };
@@ -49,7 +52,7 @@ export default function VisitorTracker() {
           device: device,
           isPWA: isPWA,
           currentPage: pathname,
-          deviceId: deviceId, // También lo enviamos al radar en vivo
+          deviceId: deviceId,
           joinedAt: new Date().toISOString(),
         });
       }
