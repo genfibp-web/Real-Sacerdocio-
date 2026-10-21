@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { convertToWebP } from "@/lib/imageUtils";
-import { Plus, Loader2, ArrowLeft, Image as ImageIcon, CheckCircle, AlertTriangle, X, Trash2 } from "lucide-react";
+import { Plus, Loader2, ArrowLeft, Image as ImageIcon, CheckCircle, AlertTriangle, X, Trash2, FileText } from "lucide-react";
 import Link from "next/link";
 
 export default function PublicacionesAdmin() {
@@ -16,6 +16,7 @@ export default function PublicacionesAdmin() {
   const [contenido, setContenido] = useState("");
   const [imagen, setImagen] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [pdfFile, setPdfFile] = useState<File | null>(null); // <-- Estado para el PDF
 
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [noticiaToDelete, setNoticiaToDelete] = useState<any | null>(null);
@@ -55,7 +56,9 @@ export default function PublicacionesAdmin() {
 
     try {
       let imagen_url = null;
+      let pdf_url = null; // <-- Variable para guardar la URL del PDF
 
+      // 1. Subir Imagen (si existe)
       if (imagen) {
         let fileFinal = imagen;
         try { fileFinal = await convertToWebP(imagen); } catch (e) { console.warn("Usando original"); }
@@ -68,11 +71,23 @@ export default function PublicacionesAdmin() {
         imagen_url = publicUrl;
       }
 
+      // 2. Subir PDF (si existe)
+      if (pdfFile) {
+        const pdfName = `documento-${Date.now()}.pdf`;
+        const { error: uploadPdfError } = await supabase.storage.from('recuerdos').upload(pdfName, pdfFile);
+        if (uploadPdfError) throw new Error(uploadPdfError.message);
+        
+        const { data: { publicUrl } } = supabase.storage.from('recuerdos').getPublicUrl(pdfName);
+        pdf_url = publicUrl;
+      }
+
+      // 3. Guardar en base de datos
       const { error } = await supabase.from('noticias').insert([{
         comunidad_slug: comunidadSlug,
         titulo,
         contenido,
-        imagen_url
+        imagen_url,
+        pdf_url // <-- Guardamos el enlace del PDF
       }]);
 
       if (error) throw new Error(error.message);
@@ -82,6 +97,7 @@ export default function PublicacionesAdmin() {
       setContenido("");
       setImagen(null);
       setPreview(null);
+      setPdfFile(null);
       fetchData();
 
     } catch (error: any) {
@@ -96,6 +112,10 @@ export default function PublicacionesAdmin() {
     if (noticiaToDelete.imagen_url) {
       const fileName = noticiaToDelete.imagen_url.split('/').pop();
       if (fileName) await supabase.storage.from('fotos').remove([fileName]);
+    }
+    if (noticiaToDelete.pdf_url) {
+      const pdfName = noticiaToDelete.pdf_url.split('/').pop();
+      if (pdfName) await supabase.storage.from('recuerdos').remove([pdfName]);
     }
     await supabase.from('noticias').delete().eq('id', noticiaToDelete.id);
     setNoticiaToDelete(null);
@@ -137,13 +157,22 @@ export default function PublicacionesAdmin() {
 
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-400">Contenido / Mensaje</label>
-              <textarea rows={5} required value={contenido} onChange={(e) => setContenido(e.target.value)} className="w-full bg-black/50 border border-white/10 text-white px-3 py-2 rounded-lg text-sm resize-none" placeholder="Escribe aquí..."></textarea>
+              <textarea rows={4} required value={contenido} onChange={(e) => setContenido(e.target.value)} className="w-full bg-black/50 border border-white/10 text-white px-3 py-2 rounded-lg text-sm resize-none" placeholder="Escribe aquí..."></textarea>
             </div>
 
             <div className="space-y-1">
               <label className="text-xs font-medium text-gray-400">Imagen (Opcional)</label>
               <input type="file" accept="image/*" onChange={handleImageChange} className="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-real-purple/20 file:text-real-purple w-full" />
               {preview && <img src={preview} alt="Preview" className="w-full h-32 object-cover rounded-lg mt-2" />}
+            </div>
+
+            {/* NUEVO CAMPO PARA PDF */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-gray-400">Documento PDF (Opcional)</label>
+              <div className="relative">
+                <input type="file" accept="application/pdf" onChange={(e) => setPdfFile(e.target.files ? e.target.files[0] : null)} className="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-white/5 file:text-white w-full" />
+                {pdfFile && <p className="text-xs text-green-400 mt-1 flex items-center gap-1"><FileText size={12}/> {pdfFile.name}</p>}
+              </div>
             </div>
 
             <button type="submit" disabled={loading} className="w-full bg-real-purple hover:bg-real-blue text-white py-2 rounded-lg font-semibold transition-all flex justify-center items-center gap-2 mt-4">
@@ -172,6 +201,11 @@ export default function PublicacionesAdmin() {
                   </div>
                   <h4 className="text-lg font-bold text-white leading-tight mb-1">{noticia.titulo}</h4>
                   <p className="text-sm text-gray-400 line-clamp-2">{noticia.contenido}</p>
+                  {noticia.pdf_url && (
+                    <span className="inline-flex items-center gap-1 text-xs text-real-purple mt-2 bg-real-purple/10 px-2 py-1 rounded">
+                      <FileText size={12} /> PDF Adjunto
+                    </span>
+                  )}
                 </div>
                 <button onClick={() => setNoticiaToDelete(noticia)} className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg self-start">
                   <Trash2 size={18} />
@@ -182,22 +216,7 @@ export default function PublicacionesAdmin() {
         </div>
       </div>
 
-      {feedback && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setFeedback(null)}></div>
-          <div className="relative bg-real-dark border border-white/10 rounded-3xl p-8 max-w-sm w-full shadow-2xl">
-            <button onClick={() => setFeedback(null)} className="absolute top-4 right-4 text-gray-500 hover:text-white"><X size={20} /></button>
-            <div className="flex flex-col items-center text-center">
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-6 ${feedback.type === 'success' ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
-                {feedback.type === 'success' ? <CheckCircle size={32} className="text-green-500" /> : <AlertTriangle size={32} className="text-red-500" />}
-              </div>
-              <p className="text-gray-300 mb-6">{feedback.message}</p>
-              <button onClick={() => setFeedback(null)} className="w-full bg-white/5 hover:bg-white/10 text-white py-2.5 rounded-xl">Aceptar</button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* MODAL DE ELIMINACIÓN */}
       {noticiaToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setNoticiaToDelete(null)}></div>
@@ -209,6 +228,23 @@ export default function PublicacionesAdmin() {
                 <button onClick={() => setNoticiaToDelete(null)} className="flex-1 bg-white/5 py-2 rounded-xl text-white">Cancelar</button>
                 <button onClick={confirmDelete} className="flex-1 bg-red-500 py-2 rounded-xl text-white">Eliminar</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE FEEDBACK */}
+      {feedback && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setFeedback(null)}></div>
+          <div className="relative bg-real-dark border border-white/10 rounded-3xl p-8 max-w-sm w-full shadow-2xl">
+            <button onClick={() => setFeedback(null)} className="absolute top-4 right-4 text-gray-500 hover:text-white"><X size={20} /></button>
+            <div className="flex flex-col items-center text-center">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-6 ${feedback.type === 'success' ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                {feedback.type === 'success' ? <CheckCircle size={32} className="text-green-500" /> : <AlertTriangle size={32} className="text-red-500" />}
+              </div>
+              <p className="text-gray-300 mb-6">{feedback.message}</p>
+              <button onClick={() => setFeedback(null)} className="w-full bg-white/5 hover:bg-white/10 text-white py-2.5 rounded-xl">Aceptar</button>
             </div>
           </div>
         </div>
