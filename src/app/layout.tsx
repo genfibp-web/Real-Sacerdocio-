@@ -46,6 +46,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className="dark">
+      {/* 👇 AQUÍ ESTÁ LA ETIQUETA QUE FALTABA */}
+      <head>
+        <link rel="apple-touch-icon" sizes="180x180" href="/icono-pwa-v3.png" />
+      </head>
+      
       <body className={`${cinzel.variable} ${inter.variable} font-sans bg-real-black text-white antialiased selection:bg-real-purple`}>
         <RealtimeRefresher />
         <PWAInstallPrompt />

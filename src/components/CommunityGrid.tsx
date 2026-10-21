@@ -24,7 +24,7 @@ const comunidades = [
   { 
     name: "Niños y Adolescentes", 
     slug: "ninos", 
-    time: "Domingos", 
+    time: "Los Niños son el Futuro de la Sociedad", 
     image: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=1000&auto=format&fit=crop" 
   },
   { 

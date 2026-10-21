@@ -36,7 +36,7 @@ export default function Hero() {
           
           <div className="border-l-2 border-real-purple pl-3 md:pl-6 mb-6 md:mb-10 bg-black/40 md:bg-transparent p-3 md:p-0 rounded-r-xl backdrop-blur-sm md:backdrop-blur-none">
             <p className="text-gray-200 text-xs sm:text-base md:text-xl leading-relaxed italic drop-shadow-lg">
-              «Mas vosotros sois linaje escogido, real sacerdocio, nación santa, pueblo adquirido por Dios, para que anunciéis las virtudes de aquel que os llamó de las tinieblas a su luz admirable».
+              «Mas vosotros sois linaje escogido, Real Sacerdocio, Nación santa, Pueblo adquirido por Dios, para que anunciéis las virtudes de aquel que os llamó de las tinieblas a su luz admirable».
             </p>
             <p className="text-real-gold font-semibold text-[10px] md:text-sm mt-2 uppercase tracking-wider">
               — 1 Pedro 2:9
