@@ -13,7 +13,6 @@ const comunidades = [
     name: "Hombres de la Realeza", 
     slug: "caballeros", 
     time: "Martes / Damas y Caballeros", 
-    // Hombres adultos reunidos, ambiente oscuro y formal (sin caras visibles)
     image: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=1000&auto=format&fit=crop" 
   },
   { 
@@ -28,6 +27,13 @@ const comunidades = [
     time: "Domingos", 
     image: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=1000&auto=format&fit=crop" 
   },
+  // 👇 NUEVO MINISTERIO
+  { 
+    name: "Ministerio de Parejas", 
+    slug: "parejas", 
+    time: "Viernes", 
+    image: "/minispareja.webp" 
+  },
 ];
 
 export default function CommunityGrid() {
@@ -40,7 +46,8 @@ export default function CommunityGrid() {
           <p className="text-gray-400 max-w-2xl mx-auto text-lg">Encuentra tu lugar, crece en fe y comparte en comunidad.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Ajustamos a 3 columnas en lg y 5 en xl para que se vean bien las 5 tarjetas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {comunidades.map((comunidad) => (
             <Link 
               key={comunidad.slug} 

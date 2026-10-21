@@ -3,7 +3,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { CalendarDays, MapPin, ArrowLeft, Megaphone, FileText } from "lucide-react"; // <-- Agregamos FileText
+import { CalendarDays, MapPin, ArrowLeft, Megaphone, FileText } from "lucide-react";
 import { notFound } from "next/navigation";
 import CommunityFeed from "@/components/CommunityFeed"; 
 
@@ -14,6 +14,8 @@ const comunidadesInfo: Record<string, any> = {
   caballeros: { nombre: "Hombres de la Realeza", descripcion: "Hombres de fe, llamados a liderar sus hogares y servir a Dios con integridad y valor.", imagen: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=1000&auto=format&fit=crop" },
   damas: { nombre: "Mujeres de Buena Voluntad", descripcion: "Mujeres virtuosas, fuertes y llenas del amor de Dios, creciendo juntas en fe y propósito.", imagen: "/damas.webp" },
   ninos: { nombre: "Niños y Adolescentes", descripcion: "Un espacio diseñado para que los más pequeños y los adolescentes crezcan en el amor de Jesús, descubran su propósito y hagan grandes amigos.", imagen: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=1000&auto=format&fit=crop" },
+  // 👇 NUEVO MINISTERIO
+  parejas: { nombre: "Ministerio de Parejas", descripcion: "Un espacio para fortalecer el matrimonio, crecer juntos en el amor de Dios y edificar hogares conforme a su propósito.", imagen: "/minispareja.webp" },
 };
 
 export default async function CommunityPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -78,7 +80,6 @@ export default async function CommunityPage({ params }: { params: Promise<{ slug
             {noticias.map((noticia) => (
               <div key={noticia.id} className="bg-real-dark border border-white/10 rounded-2xl overflow-hidden hover:border-real-purple/30 transition-colors flex flex-col">
                 {noticia.imagen_url && (
-                  // AQUÍ ARREGLAMOS LA IMAGEN: Quitamos el "aspect-video" forzado
                   <div className="w-full h-64 md:h-72 relative overflow-hidden">
                     <img 
                       src={noticia.imagen_url} 
@@ -93,18 +94,17 @@ export default async function CommunityPage({ params }: { params: Promise<{ slug
                       {noticia.comunidad_slug === 'general' ? 'General' : 'Comunidad'}
                     </span>
                     <span className="text-xs text-gray-500">
-  {new Date(noticia.creado_en).toLocaleDateString('es-ES', { 
-    timeZone: 'America/Santo_Domingo', 
-    day: 'numeric', 
-    month: 'long', 
-    year: 'numeric' 
-  })}
-</span>
+                      {new Date(noticia.creado_en).toLocaleDateString('es-ES', { 
+                        timeZone: 'America/Santo_Domingo', 
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric' 
+                      })}
+                    </span>
                   </div>
                   <h3 className="font-serif text-xl font-bold text-white mb-3">{noticia.titulo}</h3>
                   <p className="text-gray-400 text-sm whitespace-pre-line mb-4 flex-grow">{noticia.contenido}</p>
                   
-                  {/* BOTÓN PARA VER EL PDF */}
                   {noticia.pdf_url && (
                     <a 
                       href={noticia.pdf_url} 
