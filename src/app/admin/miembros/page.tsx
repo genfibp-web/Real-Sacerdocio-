@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { Users, UserPlus, Loader2, Search, Filter, Phone, MapPin, Trash2, AlertTriangle, X, CheckCircle } from "lucide-react";
+import { UserPlus, Loader2, Search, Filter, Phone, MapPin, Trash2, AlertTriangle, X, CheckCircle, Edit } from "lucide-react"; // <-- Edit agregado
 import { useRouter } from "next/navigation";
 
 export default function MiembrosAdmin() {
@@ -15,6 +15,7 @@ export default function MiembrosAdmin() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCommunity, setFilterCommunity] = useState("all");
 
+  // Estados para el formulario de AGREGAR
   const [formData, setFormData] = useState({
     nombre: "",
     telefono: "",
@@ -22,8 +23,18 @@ export default function MiembrosAdmin() {
   });
   const [showForm, setShowForm] = useState(false);
 
+  // Estados para EDITAR
+  const [miembroToEdit, setMiembroToEdit] = useState<any | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    nombre: "",
+    telefono: "",
+    comunidad_slug: "",
+  });
+
+  // Estados para ELIMINAR
   const [miembroToDelete, setMiembroToDelete] = useState<any | null>(null);
   const [deleting, setDeleting] = useState(false);
+
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   useEffect(() => {
@@ -86,6 +97,27 @@ export default function MiembrosAdmin() {
     setSaving(false);
   };
 
+  // 📝 FUNCIÓN PARA ACTUALIZAR MIEMBRO
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!miembroToEdit) return;
+    setSaving(true);
+
+    const { error } = await supabase
+      .from('miembros')
+      .update(editFormData)
+      .eq('id', miembroToEdit.id);
+
+    if (error) {
+      setFeedback({ type: 'error', message: "Error al actualizar: " + error.message });
+    } else {
+      setFeedback({ type: 'success', message: "Miembro actualizado correctamente." });
+      setMiembroToEdit(null); // Cerramos el modal
+      fetchMiembros(); // Recargamos la lista
+    }
+    setSaving(false);
+  };
+
   const handleDelete = async () => {
     if (!miembroToDelete) return;
     setDeleting(true);
@@ -106,35 +138,25 @@ export default function MiembrosAdmin() {
     setMiembroToDelete(null);
   };
 
-  const filteredMiembros = miembros.filter(m => 
-    m.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   // 📞 FUNCIÓN PARA FORMATEAR EL NÚMERO (8xx-xxx-xxxx)
   const formatPhone = (phone: string) => {
     if (!phone) return "";
-    // Limpiamos todo lo que no sea número
     let cleaned = phone.replace(/\D/g, '');
-    
-    // Si empieza con 1 y tiene 11 dígitos, le quitamos el 1 (código de país)
-    if (cleaned.length === 11 && cleaned.startsWith('1')) {
-      cleaned = cleaned.substring(1);
-    }
-    
-    // Si tiene exactamente 10 dígitos, aplicamos el formato 8xx-xxx-xxxx
-    if (cleaned.length === 10) {
-      return `${cleaned.substring(0, 3)}-${cleaned.substring(3, 6)}-${cleaned.substring(6, 10)}`;
-    }
-    
-    // Si tiene otra longitud (ej. un teléfono fijo), lo devolvemos limpio
+    if (cleaned.length === 11 && cleaned.startsWith('1')) cleaned = cleaned.substring(1);
+    if (cleaned.length === 10) return `${cleaned.substring(0, 3)}-${cleaned.substring(3, 6)}-${cleaned.substring(6, 10)}`;
     return cleaned;
   };
+
+  const filteredMiembros = miembros.filter(m => 
+    m.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (!user) return <div className="p-8 text-white">Cargando...</div>;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 relative">
       
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="font-serif text-3xl font-bold text-white mb-2">Censo de Miembros</h1>
@@ -148,6 +170,7 @@ export default function MiembrosAdmin() {
         </button>
       </div>
 
+      {/* FORMULARIO DE AGREGAR */}
       {showForm && (
         <form onSubmit={handleAddMember} className="bg-real-dark border border-white/10 p-6 rounded-2xl animate-in fade-in slide-in-from-top-4">
           <h3 className="text-lg font-bold text-white mb-4">Registrar Nuevo Miembro</h3>
@@ -162,12 +185,7 @@ export default function MiembrosAdmin() {
             </div>
             <div>
               <label className="text-xs text-gray-400 mb-1 block">Comunidad</label>
-              <select 
-                disabled={user.rol === 'lider'} 
-                value={formData.comunidad_slug} 
-                onChange={(e) => setFormData({...formData, comunidad_slug: e.target.value})} 
-                className="w-full bg-black/50 border border-white/10 text-white px-3 py-2 rounded-lg disabled:opacity-50"
-              >
+              <select disabled={user.rol === 'lider'} value={formData.comunidad_slug} onChange={(e) => setFormData({...formData, comunidad_slug: e.target.value})} className="w-full bg-black/50 border border-white/10 text-white px-3 py-2 rounded-lg disabled:opacity-50">
                 <option value="jovenes">Jóvenes</option>
                 <option value="caballeros">Caballeros</option>
                 <option value="damas">Damas</option>
@@ -181,27 +199,18 @@ export default function MiembrosAdmin() {
         </form>
       )}
 
+      {/* TABLA / LISTA */}
       <div className="bg-real-dark border border-white/5 rounded-2xl overflow-hidden">
         <div className="p-4 border-b border-white/5 flex flex-col md:flex-row gap-4 justify-between bg-white/5">
           <div className="relative w-full md:w-96">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-            <input 
-              type="text" 
-              placeholder="Buscar por nombre..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-black/50 border border-white/10 text-white pl-10 pr-4 py-2 rounded-lg text-sm outline-none focus:border-real-purple"
-            />
+            <input type="text" placeholder="Buscar por nombre..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-black/50 border border-white/10 text-white pl-10 pr-4 py-2 rounded-lg text-sm outline-none focus:border-real-purple" />
           </div>
 
           {user.rol === 'admin' && (
             <div className="flex items-center gap-2 bg-black/50 border border-white/10 px-3 py-2 rounded-lg text-sm">
               <Filter size={16} className="text-gray-400" />
-              <select 
-                value={filterCommunity} 
-                onChange={(e) => setFilterCommunity(e.target.value)}
-                className="bg-transparent text-white outline-none cursor-pointer"
-              >
+              <select value={filterCommunity} onChange={(e) => setFilterCommunity(e.target.value)} className="bg-transparent text-white outline-none cursor-pointer">
                 <option value="all">Todas las comunidades</option>
                 <option value="jovenes">Jóvenes</option>
                 <option value="caballeros">Caballeros</option>
@@ -228,27 +237,33 @@ export default function MiembrosAdmin() {
                     <p className="font-medium text-white">{miembro.nombre}</p>
                     <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
                       <span className="flex items-center gap-1 capitalize"><MapPin size={12} /> {miembro.comunidad_slug}</span>
-                      
-                      {/* 📞 AQUÍ APLICAMOS EL FORMATO VISUAL */}
                       {miembro.telefono && (
-                        <a 
-                          href={`tel:${miembro.telefono.replace(/[^\d+]/g, '')}`} 
-                          className="flex items-center gap-1 hover:text-real-purple transition-colors font-medium"
-                          title={`Llamar a ${miembro.nombre}`}
-                        >
+                        <a href={`tel:${miembro.telefono.replace(/[^\d+]/g, '')}`} className="flex items-center gap-1 hover:text-real-purple transition-colors font-medium" title={`Llamar a ${miembro.nombre}`}>
                           <Phone size={12} /> {formatPhone(miembro.telefono)}
                         </a>
                       )}
-
                     </div>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-4">
-                  <div className="text-xs text-gray-500 hidden md:block">
+                <div className="flex items-center gap-2">
+                  <div className="text-xs text-gray-500 hidden md:block mr-2">
                     {new Date(miembro.fecha_registro).toLocaleDateString()}
                   </div>
                   
+                  {/* 📝 BOTÓN DE EDITAR */}
+                  <button 
+                    onClick={() => {
+                      setMiembroToEdit(miembro);
+                      setEditFormData({ nombre: miembro.nombre, telefono: miembro.telefono || "", comunidad_slug: miembro.comunidad_slug });
+                    }}
+                    className="p-2 text-gray-500 hover:text-real-gold hover:bg-real-gold/10 rounded-lg transition-colors opacity-100 md:opacity-0 group-hover:opacity-100"
+                    title="Editar miembro"
+                  >
+                    <Edit size={18} />
+                  </button>
+
+                  {/* 🗑️ BOTÓN DE ELIMINAR */}
                   <button 
                     onClick={() => setMiembroToDelete(miembro)}
                     className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-100 md:opacity-0 group-hover:opacity-100"
@@ -263,6 +278,45 @@ export default function MiembrosAdmin() {
         )}
       </div>
 
+      {/* 🛠️ MODAL DE EDICIÓN */}
+      {miembroToEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" onClick={() => setMiembroToEdit(null)}></div>
+          <div className="relative bg-real-dark border border-white/10 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <button onClick={() => setMiembroToEdit(null)} className="absolute top-4 right-4 text-gray-500 hover:text-white"><X size={20} /></button>
+            <h3 className="text-2xl font-bold text-white mb-6">Editar Miembro</h3>
+            
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Nombre Completo</label>
+                <input type="text" required value={editFormData.nombre} onChange={(e) => setEditFormData({...editFormData, nombre: e.target.value})} className="w-full bg-black/50 border border-white/10 text-white px-3 py-2 rounded-lg" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Teléfono</label>
+                <input type="text" value={editFormData.telefono} onChange={(e) => setEditFormData({...editFormData, telefono: e.target.value})} className="w-full bg-black/50 border border-white/10 text-white px-3 py-2 rounded-lg" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Comunidad</label>
+                <select disabled={user.rol === 'lider'} value={editFormData.comunidad_slug} onChange={(e) => setEditFormData({...editFormData, comunidad_slug: e.target.value})} className="w-full bg-black/50 border border-white/10 text-white px-3 py-2 rounded-lg disabled:opacity-50">
+                  <option value="jovenes">Jóvenes</option>
+                  <option value="caballeros">Caballeros</option>
+                  <option value="damas">Damas</option>
+                  <option value="ninos">Niños</option>
+                </select>
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <button type="button" onClick={() => setMiembroToEdit(null)} className="flex-1 bg-white/5 hover:bg-white/10 text-white py-3 rounded-xl font-medium transition-colors">Cancelar</button>
+                <button type="submit" disabled={saving} className="flex-1 bg-real-purple hover:bg-real-blue text-white py-3 rounded-xl font-medium transition-colors flex justify-center items-center gap-2">
+                  {saving ? <Loader2 size={18} className="animate-spin" /> : "Guardar Cambios"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ⚠️ MODAL DE ELIMINACIÓN (Se queda igual) */}
       {miembroToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" onClick={() => setMiembroToDelete(null)}></div>
@@ -285,6 +339,7 @@ export default function MiembrosAdmin() {
         </div>
       )}
 
+      {/* ✅ MODAL DE FEEDBACK (Se queda igual) */}
       {feedback && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" onClick={() => setFeedback(null)}></div>
