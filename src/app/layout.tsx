@@ -6,7 +6,6 @@ import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import PWARegister from "@/components/PWARegister";
 import PWARecovery from "@/components/PWARecovery";
 import VisitorTracker from "@/components/VisitorTracker"; // <-- 1. IMPORTAMOS EL RADAR
-import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X, Globe, Activity } from "lucide-react";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 

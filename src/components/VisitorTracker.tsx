@@ -18,6 +18,19 @@ export default function VisitorTracker() {
     else if (/android/i.test(userAgent)) device = "Android";
     else if (isMobile) device = "Móvil";
 
+    // 1. GUARDAR EN LA BASE DE DATOS (Para el historial del panel)
+    const saveVisit = async () => {
+      const { error } = await supabase.from('visitas').insert([
+        {
+          user_agent: `${device} - PWA: ${isPWA} - Página: ${pathname}`,
+        }
+      ]);
+      if (error) console.error("Error guardando visita:", error);
+    };
+
+    saveVisit();
+
+    // 2. MANTENER EL PRESENCE (Por si luego quieres un radar en vivo)
     const channel = supabase.channel('global-visitors', {
       config: { presence: { key: sessionId } },
     });
