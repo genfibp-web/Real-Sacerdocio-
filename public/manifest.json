@@ -1,3 +1,4 @@
+cat << 'EOF' > public/manifest.json
 {
   "name": "Real Sacerdocio",
   "short_name": "Real Sacerdocio",
@@ -8,16 +9,17 @@
   "theme_color": "#050505",
   "icons": [
     {
-      "src": "/icono-pwa-v3.png",
+      "src": "/logo_Rs.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/icono-pwa-v3.png",
+      "src": "/logo_Rs.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
+EOF
