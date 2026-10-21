@@ -60,8 +60,8 @@ export default async function EventoPage({ params }: { params: Promise<{ slug: s
     ? `https://www.google.com/maps/search/?api=1&query=${coordenadasIglesia}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(evento.ubicacion)}`;
     
-  const whatsappNumber = "1234567890"; 
-  const whatsappMessage = encodeURIComponent(`Hola, vi el evento "${evento.titulo}" en la web y quiero más información para asistir.`);
+  const whatsappNumber = "8296512185"; 
+  const whatsappMessage = encodeURIComponent(`Hola, vi el evento "${evento.titulo}" en la web de la Iglesia y quiero más información para asistir.`);
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
   return (
