@@ -1,4 +1,3 @@
-cat << 'EOF' > src/components/PWAInstallButton.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -37,7 +36,7 @@ export default function PWAInstallButton() {
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === "accepted") setDeferredPrompt(null);
     } else {
-      alert("Chrome aún no detecta la app. Asegúrate de estar en HTTPS, que el manifest sea válido y espera unos segundos.");
+      alert("Chrome aún no detecta la app. Asegúrate de estar en HTTPS y espera unos segundos.");
     }
   };
 
@@ -51,4 +50,3 @@ export default function PWAInstallButton() {
     </button>
   );
 }
-EOF
