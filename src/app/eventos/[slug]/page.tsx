@@ -86,13 +86,11 @@ export default async function EventoPage({ params }: { params: Promise<{ slug: s
       <section className="relative h-[60vh] min-h-[500px] flex items-end justify-center pb-12 pt-24">
         <div className="absolute inset-0 z-0">
           {evento.cartel_url ? (
-             <Image 
-             src={evento.cartel_url} 
-             alt={evento.titulo} 
-             fill 
-             className="object-cover object-center opacity-40"
-             priority
-           />
+            <img 
+              src={evento.cartel_url} 
+              alt={evento.titulo} 
+              className="absolute inset-0 w-full h-full object-cover object-center opacity-40"
+            />
           ) : (
             <div className="w-full h-full bg-real-dark" />
           )}
