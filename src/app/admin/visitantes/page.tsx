@@ -53,8 +53,8 @@ export default function VisitantesPage() {
             <div key={index} className="bg-real-dark p-4 rounded-xl border border-white/5 flex flex-col gap-1">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {/* Indicador de ACTIVO (Verde) o INACTIVO (Gris) */}
-                  <span className={`w-3 h-3 rounded-full ${v.isFocused ? 'bg-green-500' : 'bg-gray-500'}`}></span>
+                  {/* Luz verde fija, sin importar si cambia de pestaña */}
+                  <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
                   <p className="text-sm font-medium text-white">
                     📱 {v.device || "Dispositivo"}
                   </p>
@@ -67,7 +67,7 @@ export default function VisitantesPage() {
                 Viendo: <span className="text-real-purple font-medium">{v.currentPage}</span>
               </p>
               <p className="text-xs text-gray-500">
-                {v.isFocused ? "🟢 Navegando ahora" : "⚪ En otra pestaña / minimizado"}
+                En línea desde: {v.joinedAt ? new Date(v.joinedAt).toLocaleTimeString() : "Ahora"}
               </p>
             </div>
           ))}
