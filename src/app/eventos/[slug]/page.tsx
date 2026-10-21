@@ -46,7 +46,6 @@ export default async function EventoPage({ params }: { params: Promise<{ slug: s
     notFound();
   }
 
-  // Formateamos la fecha para mostrarla bonita (con el arreglo de zona horaria)
   const fecha = new Date(evento.fecha_inicio + 'T12:00:00').toLocaleDateString("es-ES", {
     weekday: "long",
     year: "numeric",
@@ -54,7 +53,6 @@ export default async function EventoPage({ params }: { params: Promise<{ slug: s
     day: "numeric",
   });
 
-  // Lógica para las coordenadas
   const coordenadasIglesia = "18.44795697205258,-69.01268224147996";
   const esIglesia = evento.ubicacion === "Iglesia Real Sacerdocio";
   
@@ -62,20 +60,7 @@ export default async function EventoPage({ params }: { params: Promise<{ slug: s
     ? `https://www.google.com/maps/search/?api=1&query=${coordenadasIglesia}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(evento.ubicacion)}`;
     
-  // 📞 DIRECTORIO DE NÚMEROS DE WHATSAPP POR COMUNIDAD
-  // Si una comunidad no tiene número (o lo dejas vacío), el botón no aparecerá.
-  const telefonosComunidades: Record<string, string> = {
-    jovenes: "8296512185", // <-- PON AQUÍ EL NÚMERO REAL DE JÓVENES (sin el signo +)
-    damas: "",              // <-- Aquí pondrás el de Damas después
-    caballeros: "",         // <-- Aquí pondrás el de Caballeros después
-    ninos: "",              // <-- Aquí pondrás el de Niños después
-    general: ""             // <-- Aquí pondrás el general después
-  };
-
-  // Buscamos si la comunidad del evento tiene un número asignado
-  const whatsappNumber = telefonosComunidades[evento.comunidad_slug] || "";
-  const tieneWhatsapp = whatsappNumber.trim().length > 0;
-
+  const whatsappNumber = "1234567890"; 
   const whatsappMessage = encodeURIComponent(`Hola, vi el evento "${evento.titulo}" en la web y quiero más información para asistir.`);
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
@@ -83,18 +68,23 @@ export default async function EventoPage({ params }: { params: Promise<{ slug: s
     <main className="min-h-screen flex flex-col bg-real-black">
       <Navbar />
 
-      <section className="relative h-[60vh] min-h-[500px] flex items-end justify-center pb-12 pt-24">
-        <div className="absolute inset-0 z-0">
+      <section className="relative h-[60vh] min-h-[500px] flex items-end justify-center pb-12 pt-24 overflow-hidden">
+        
+        {/* FONDO CON ANIMACIÓN DE RESPIRACIÓN */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
           {evento.cartel_url ? (
-            <img 
-              src={evento.cartel_url} 
-              alt={evento.titulo} 
-              className="absolute inset-0 w-full h-full object-cover object-center opacity-40"
-            />
+             // Usamos <img> en lugar de <Image> para evitar el error de configuración
+             <img 
+               src={evento.cartel_url} 
+               alt={evento.titulo} 
+               className="absolute inset-0 w-full h-full object-cover object-center"
+             />
           ) : (
             <div className="w-full h-full bg-real-dark" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-real-black via-real-black/60 to-transparent"></div>
+          
+          <div className="absolute inset-0 bg-black animate-overlay-pulse pointer-events-none"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-real-black via-real-black/80 to-transparent pointer-events-none"></div>
         </div>
 
         <div className="relative z-10 w-full max-w-5xl mx-auto px-6">
@@ -128,24 +118,21 @@ export default async function EventoPage({ params }: { params: Promise<{ slug: s
               </p>
             </div>
             
-            {/* SECCIÓN DE WHATSAPP CONDICIONAL: Solo se muestra si la comunidad tiene número */}
-            {tieneWhatsapp && (
-              <div className="bg-real-dark border border-white/10 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-1">¿Te gustaría asistir?</h3>
-                  <p className="text-gray-400 text-sm">Escríbenos y con gusto te daremos más detalles.</p>
-                </div>
-                <a 
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-[#25D366] hover:bg-[#20b858] text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 whitespace-nowrap w-full md:w-auto justify-center"
-                >
-                  <MessageCircle size={20} />
-                  Contactar por WhatsApp
-                </a>
+            <div className="bg-real-dark border border-white/10 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 mt-8">
+              <div>
+                <h3 className="text-xl font-bold text-white mb-1">¿Te gustaría asistir?</h3>
+                <p className="text-gray-400 text-sm">Escríbenos y con gusto te daremos más detalles.</p>
               </div>
-            )}
+              <a 
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-[#25D366] hover:bg-[#20b858] text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 whitespace-nowrap w-full md:w-auto justify-center"
+              >
+                <MessageCircle size={20} />
+                Contactar por WhatsApp
+              </a>
+            </div>
           </div>
 
           <div className="lg:col-span-1">

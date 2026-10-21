@@ -6,76 +6,77 @@ export default function Footer() {
   const instagramUrl = "https://www.instagram.com/realsacerdocio_1/?hl=es";
 
   return (
-    <footer className="bg-black py-16 border-t border-white/10">
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-center md:text-left">
+    <footer className="bg-black pt-6 pb-4 md:pt-16 md:pb-8 border-t border-white/10">
+      <div className="max-w-7xl mx-auto px-5 md:px-6 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-12 text-center md:text-left">
         
         {/* Columna 1: Logo y Redes */}
-        <div>
-          <h4 className="font-serif text-3xl font-bold text-white mb-4">REAL SACERDOCIO</h4>
-          <p className="text-gray-500 text-sm leading-relaxed mb-6">
+        <div className="flex flex-col items-center md:items-start">
+          <h4 className="font-serif text-xl md:text-3xl font-bold text-white mb-1 md:mb-4">REAL SACERDOCIO</h4>
+          <p className="text-gray-500 text-[11px] md:text-sm leading-tight mb-3 md:mb-6 max-w-[250px]">
             Un lugar de encuentro con Dios, donde cada persona puede encontrar propósito, comunidad y restauración.
           </p>
           
-          <div className="flex justify-center md:justify-start gap-4">
-            <a 
-              href={instagramUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="p-2.5 bg-white/5 hover:bg-real-purple rounded-full transition-colors group"
-              title="Síguenos en Instagram"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 group-hover:text-white transition-colors">
-                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-              </svg>
-            </a>
-          </div>
+          <a 
+            href={instagramUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="p-1.5 bg-white/5 hover:bg-real-purple rounded-full transition-colors group"
+            title="Síguenos en Instagram"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 group-hover:text-white transition-colors">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+          </a>
         </div>
 
         {/* Columna 2: Horarios */}
         <div>
-          <h5 className="text-white font-semibold mb-4">Horarios de Culto</h5>
-          <ul className="text-gray-500 text-sm space-y-3">
-            <li className="flex flex-col md:flex-row md:justify-between border-b border-white/5 pb-2">
-              <span>Domingos (Culto Evangelístico):</span> 
-              <span className="text-gray-300">05:00 PM</span>
+          <h5 className="text-white font-semibold text-xs md:text-base mb-2 md:mb-4 uppercase tracking-wider">Horarios</h5>
+          <ul className="text-gray-500 text-[11px] md:text-sm space-y-1.5 md:space-y-3">
+            <li className="flex justify-between md:justify-start md:gap-4 border-b border-white/5 pb-1 md:pb-2">
+              <span>Domingos:</span> 
+              <span className="text-gray-300 whitespace-nowrap">05:00 PM</span>
             </li>
-            <li className="flex flex-col md:flex-row md:justify-between border-b border-white/5 pb-2">
-              <span>Martes (Damas y Caballeros):</span> 
-              <span className="text-gray-300">7:00 PM</span>
+            <li className="flex justify-between md:justify-start md:gap-4 border-b border-white/5 pb-1 md:pb-2">
+              <span>Martes (Damas/Caballeros):</span> 
+              <span className="text-gray-300 whitespace-nowrap">7:00 PM</span>
             </li>
-            <li className="flex flex-col md:flex-row md:justify-between">
+            <li className="flex justify-between md:justify-start md:gap-4 border-b border-white/5 pb-1 md:pb-2">
               <span>Sábados (Jóvenes):</span> 
-              <span className="text-gray-300">7:00 PM</span>
+              <span className="text-gray-300 whitespace-nowrap">7:00 PM</span>
+            </li>
+            <li className="flex justify-between md:justify-start md:gap-4">
+              <span>Viernes (Parejas):</span> 
+              <span className="text-gray-300 whitespace-nowrap">7:00 PM</span>
             </li>
           </ul>
         </div>
 
         {/* Columna 3: Ubicación */}
-        <div>
-          <h5 className="text-white font-semibold mb-4">Ubicación</h5>
-          <p className="text-gray-500 text-sm mb-4">Villa Hermosa / La Romana, República Dominicana.</p>
+        <div className="flex flex-col items-center md:items-start">
+          <h5 className="text-white font-semibold text-xs md:text-base mb-2 md:mb-4 uppercase tracking-wider">Ubicación</h5>
+          <p className="text-gray-500 text-[11px] md:text-sm mb-2 md:mb-4">Villa Hermosa / La Romana</p>
           
           <a 
             href={googleMapsUrl}
             target="_blank" 
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg text-real-purple hover:text-real-gold text-sm font-medium transition-all"
+            className="inline-flex items-center gap-1.5 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg text-real-purple hover:text-real-gold text-[11px] md:text-sm font-medium transition-all"
           >
-            <MapPin size={16} /> Ver en Google Maps
+            <MapPin size={12} className="md:w-4 md:h-4" /> Ver Mapa
           </a>
         </div>
       </div>
 
       {/* Franja inferior: Copyright y Botón Panel */}
-      <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
-        <p className="text-gray-600 text-sm">© 2026 Real Sacerdocio. Todos los derechos reservados.</p>
+      <div className="max-w-7xl mx-auto px-5 mt-6 md:mt-16 pt-4 md:pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4">
+        <p className="text-gray-600 text-[9px] md:text-sm order-2 md:order-1">© 2026 Real Sacerdocio. Todos los derechos reservados.</p>
         
-        {/* NUEVO BOTÓN AL PANEL */}
         <Link 
           href="/admin" 
-          className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white px-5 py-2.5 rounded-full border border-white/10 transition-all text-xs font-medium"
+          className="inline-flex items-center gap-1 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white px-3 py-1 md:px-5 md:py-2.5 rounded-full border border-white/10 transition-all text-[10px] md:text-xs font-medium order-1 md:order-2"
         >
           Panel Líderes
         </Link>
