@@ -16,7 +16,7 @@ export default function PublicacionesAdmin() {
   const [contenido, setContenido] = useState("");
   const [imagen, setImagen] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [pdfFile, setPdfFile] = useState<File | null>(null); // <-- Estado para el PDF
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
 
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [noticiaToDelete, setNoticiaToDelete] = useState<any | null>(null);
@@ -56,7 +56,7 @@ export default function PublicacionesAdmin() {
 
     try {
       let imagen_url = null;
-      let pdf_url = null; // <-- Variable para guardar la URL del PDF
+      let pdf_url = null;
 
       // 1. Subir Imagen (si existe)
       if (imagen) {
@@ -87,7 +87,7 @@ export default function PublicacionesAdmin() {
         titulo,
         contenido,
         imagen_url,
-        pdf_url // <-- Guardamos el enlace del PDF
+        pdf_url
       }]);
 
       if (error) throw new Error(error.message);
@@ -197,7 +197,16 @@ export default function PublicacionesAdmin() {
                     <span className="text-[10px] font-bold uppercase tracking-wider text-real-gold bg-real-gold/10 px-2 py-1 rounded-md mb-2 inline-block">
                       {noticia.comunidad_slug}
                     </span>
-                    <span className="text-xs text-gray-500">{new Date(noticia.creado_en).toLocaleDateString()}</span>
+                    
+                    {/* AQUÍ ESTÁ EL ARREGLO DE LA FECHA */}
+                    <span className="text-xs text-gray-500">
+                      {new Date(noticia.creado_en).toLocaleDateString('es-ES', { 
+                        timeZone: 'America/Santo_Domingo', 
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric' 
+                      })}
+                    </span>
                   </div>
                   <h4 className="text-lg font-bold text-white leading-tight mb-1">{noticia.titulo}</h4>
                   <p className="text-sm text-gray-400 line-clamp-2">{noticia.contenido}</p>

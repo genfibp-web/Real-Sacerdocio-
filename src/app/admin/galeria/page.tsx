@@ -226,7 +226,14 @@ export default function GaleriaAdmin() {
                       <span className="text-[10px] font-bold uppercase tracking-wider text-real-gold bg-real-gold/10 px-2 py-1 rounded-md mb-2 inline-block">
                         {pub.comunidad_slug}
                       </span>
-                      <span className="text-xs text-gray-500">{new Date(pub.creado_en).toLocaleDateString()}</span>
+                      <span className="text-xs text-gray-500">
+  {new Date(pub.creado_en).toLocaleDateString('es-ES', { 
+    timeZone: 'America/Santo_Domingo', 
+    day: 'numeric', 
+    month: 'long', 
+    year: 'numeric' 
+  })}
+</span>
                     </div>
                     <h4 className="text-lg font-bold text-white leading-tight mb-1">{pub.titulo}</h4>
                     <p className="text-sm text-gray-400 line-clamp-2">{pub.descripcion}</p>

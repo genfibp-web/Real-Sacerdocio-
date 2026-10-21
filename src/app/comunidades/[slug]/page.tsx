@@ -3,7 +3,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { CalendarDays, MapPin, ArrowLeft, Megaphone } from "lucide-react";
+import { CalendarDays, MapPin, ArrowLeft, Megaphone, FileText } from "lucide-react"; // <-- Agregamos FileText
 import { notFound } from "next/navigation";
 import CommunityFeed from "@/components/CommunityFeed"; 
 
@@ -22,34 +22,30 @@ export default async function CommunityPage({ params }: { params: Promise<{ slug
   const info = comunidadesInfo[slug];
   if (!info) notFound();
 
-  // 1. Traer Eventos (de esta comunidad + generales)
   const { data: eventos } = await supabase
     .from("eventos")
     .select("*")
-    .in("comunidad_slug", [slug, "general"]) // <-- AQUÍ ESTÁ LA MAGIA
+    .in("comunidad_slug", [slug, "general"])
     .eq("estado", "proximo")
     .eq("aprobado", true)
     .order("fecha_inicio", { ascending: true });
 
-  // 2. Traer Noticias/Publicaciones (de esta comunidad + generales)
   const { data: noticias } = await supabase
     .from("noticias")
     .select("*")
-    .in("comunidad_slug", [slug, "general"]) // <-- AQUÍ TAMBIÉN
+    .in("comunidad_slug", [slug, "general"])
     .order("creado_en", { ascending: false });
 
-  // 3. Traer Recuerdos (de esta comunidad + generales)
   const { data: recuerdos } = await supabase
     .from("publicaciones")
     .select("*")
-    .in("comunidad_slug", [slug, "general"]) // <-- Y AQUÍ
+    .in("comunidad_slug", [slug, "general"])
     .order("creado_en", { ascending: false });
 
   return (
     <main className="min-h-screen flex flex-col bg-real-black">
       <Navbar />
 
-      {/* HERO DE LA COMUNIDAD */}
       <section className="relative min-h-[70vh] flex items-center pt-24 pb-12">
         <div className="absolute inset-0 z-0">
           <Image src={info.imagen} alt={info.nombre} fill className="object-cover object-center opacity-40" priority />
@@ -82,8 +78,13 @@ export default async function CommunityPage({ params }: { params: Promise<{ slug
             {noticias.map((noticia) => (
               <div key={noticia.id} className="bg-real-dark border border-white/10 rounded-2xl overflow-hidden hover:border-real-purple/30 transition-colors flex flex-col">
                 {noticia.imagen_url && (
-                  <div className="relative aspect-video w-full">
-                    <img src={noticia.imagen_url} alt={noticia.titulo} className="w-full h-full object-cover" />
+                  // AQUÍ ARREGLAMOS LA IMAGEN: Quitamos el "aspect-video" forzado
+                  <div className="w-full h-64 md:h-72 relative overflow-hidden">
+                    <img 
+                      src={noticia.imagen_url} 
+                      alt={noticia.titulo} 
+                      className="w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105" 
+                    />
                   </div>
                 )}
                 <div className="p-6 flex flex-col flex-grow">
@@ -91,10 +92,29 @@ export default async function CommunityPage({ params }: { params: Promise<{ slug
                     <span className="text-[10px] font-bold uppercase tracking-wider text-real-gold bg-real-gold/10 px-2 py-1 rounded-md">
                       {noticia.comunidad_slug === 'general' ? 'General' : 'Comunidad'}
                     </span>
-                    <span className="text-xs text-gray-500">{new Date(noticia.creado_en).toLocaleDateString()}</span>
+                    <span className="text-xs text-gray-500">
+  {new Date(noticia.creado_en).toLocaleDateString('es-ES', { 
+    timeZone: 'America/Santo_Domingo', 
+    day: 'numeric', 
+    month: 'long', 
+    year: 'numeric' 
+  })}
+</span>
                   </div>
                   <h3 className="font-serif text-xl font-bold text-white mb-3">{noticia.titulo}</h3>
-                  <p className="text-gray-400 text-sm whitespace-pre-line">{noticia.contenido}</p>
+                  <p className="text-gray-400 text-sm whitespace-pre-line mb-4 flex-grow">{noticia.contenido}</p>
+                  
+                  {/* BOTÓN PARA VER EL PDF */}
+                  {noticia.pdf_url && (
+                    <a 
+                      href={noticia.pdf_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="mt-auto inline-flex items-center justify-center gap-2 bg-real-purple/10 hover:bg-real-purple text-real-purple hover:text-white border border-real-purple/30 px-4 py-3 rounded-xl text-sm font-medium transition-colors w-full"
+                    >
+                      <FileText size={18} /> Ver Documento Adjunto (PDF)
+                    </a>
+                  )}
                 </div>
               </div>
             ))}
@@ -122,7 +142,7 @@ export default async function CommunityPage({ params }: { params: Promise<{ slug
                 <div className="absolute inset-0 p-6 flex flex-col justify-end z-10">
                   <h3 className="font-serif text-xl font-bold text-white mb-2 leading-tight line-clamp-2">{evento.titulo}</h3>
                   <div className="space-y-1 mb-4 text-xs text-gray-300">
-                    <div className="flex items-center gap-2"><CalendarDays size={14} className="text-real-purple" /><span>{new Date(evento.fecha_inicio).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</span></div>
+                    <div className="flex items-center gap-2"><CalendarDays size={14} className="text-real-purple" /><span>{new Date(evento.fecha_inicio + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</span></div>
                     <div className="flex items-center gap-2"><MapPin size={14} className="text-real-purple" /><span>{evento.ubicacion}</span></div>
                   </div>
                   <Link href={`/eventos/${evento.slug}`} className="w-full text-center bg-white/10 hover:bg-white text-white hover:text-black border border-white/20 py-2 rounded-xl font-medium transition-all text-sm">Más Información</Link>
