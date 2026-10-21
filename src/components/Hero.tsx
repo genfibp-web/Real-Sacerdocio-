@@ -6,9 +6,8 @@ export default function Hero() {
   return (
     <section className="relative h-[100dvh] flex flex-col pt-20 overflow-hidden">
       
-      {/* FONDO CON ANIMACIÓN DE RESPIRACIÓN */}
+      {/* FONDO CON ANIMACIÓN */}
       <div className="absolute inset-0 z-0 overflow-hidden">
-        {/* La imagen se queda con brillo completo */}
         <Image 
           src="/fondo_grande.webp"
           alt="Altar Real Sacerdocio" 
@@ -17,16 +16,13 @@ export default function Hero() {
           priority
         />
         
-        {/* 1. CAPA DE OSCURIDAD ANIMADA (Esta es la que respira) */}
         <div className="absolute inset-0 bg-black animate-overlay-pulse pointer-events-none"></div>
-
-        {/* 2. DEGRADADOS ESTÁTICOS (Solo para que el texto se lea bien, más suaves ahora) */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/80 md:hidden pointer-events-none"></div>
         <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-real-black/90 via-real-black/40 to-transparent pointer-events-none"></div>
       </div>
 
       {/* CONTENIDO PRINCIPAL */}
-      <div className="relative z-10 w-full max-w-[1600px] mx-auto px-6 md:px-12 lg:px-20 flex-grow flex flex-col justify-between mt-8 md:mt-0 pb-16 md:pb-24">
+      <div className="relative z-10 w-full max-w-[1600px] mx-auto px-6 md:px-12 lg:px-20 flex-grow flex flex-col justify-between mt-8 md:mt-0 pb-20 md:pb-24">
         
         {/* Bloque de Texto */}
         <div className="w-full md:w-3/5 lg:w-1/2 text-left mt-10 md:mt-20">
@@ -48,7 +44,7 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Botones en la parte inferior */}
+        {/* Botones */}
         <div className="w-full flex flex-col sm:flex-row items-center md:items-start gap-3 md:gap-4 mt-auto">
           <Link 
             href="#comunidades"
@@ -66,9 +62,9 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* Flecha animada */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 flex flex-col items-center gap-1 animate-bounce cursor-pointer">
-        <span className="text-gray-400 text-[9px] md:text-xs uppercase tracking-widest font-medium">Desliza</span>
+      {/* 👇 FLECHA ANIMADA CENTRADA CORRECTAMENTE */}
+      <div className="absolute bottom-6 left-0 w-full flex flex-col items-center justify-center z-10 animate-bounce cursor-pointer">
+        <span className="text-gray-400 text-[9px] md:text-xs uppercase tracking-widest font-medium mb-1">Desliza</span>
         <ChevronDown size={16} className="text-real-gold md:w-5 md:h-5" />
       </div>
       
