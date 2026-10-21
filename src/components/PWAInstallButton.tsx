@@ -4,38 +4,28 @@ import { useState, useEffect } from "react";
 import { Download } from "lucide-react";
 
 export default function PWAInstallButton() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js");
-    }
-
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    setIsIOS(/iphone|ipad|ipod/.test(userAgent));
   }, []);
 
-  const handleInstall = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted") setDeferredPrompt(null);
+  const handleInstall = () => {
+    if (isIOS) {
+      alert("Para instalar en iPhone:\n1. Toca el botón 'Compartir' (el cuadro con flecha).\n2. Selecciona 'Añadir a pantalla de inicio'.");
     } else {
-      alert("Espera unos segundos o usa el menú de Chrome (3 puntos > Instalar aplicación).");
+      // Descarga el archivo APK para Android
+      window.location.href = "/real-sacerdocio.apk";
     }
   };
 
   return (
     <button 
       onClick={handleInstall}
-      className="inline-flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white px-3 py-1 md:px-5 md:py-2.5 rounded-full border border-white/10 transition-all text-[10px] md:text-xs font-medium"
+      className="inline-flex items-center gap-1.5 bg-real-purple hover:bg-real-blue text-white px-4 py-2 md:px-6 md:py-3 rounded-full border border-white/10 transition-all text-xs md:text-sm font-bold shadow-lg"
     >
-      <Download size={14} /> Instalar App
+      <Download size={16} /> Instalar App
     </button>
   );
 }

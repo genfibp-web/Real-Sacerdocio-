@@ -1,3 +1,7 @@
+self.addEventListener('install', function(event) {
+  self.skipWaiting();
+});
+
 self.addEventListener('fetch', function(event) {
-  // Service worker mínimo vital para que Chrome permita la PWA
+  // Este evento es OBLIGATORIO para que Chrome detecte la PWA
 });
