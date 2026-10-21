@@ -9,6 +9,11 @@ export default function VisitorTracker() {
   const [sessionId] = useState(() => Math.random().toString(36).substring(7));
 
   useEffect(() => {
+    // Bloqueamos el tracker si estamos en el admin
+    if (pathname.startsWith('/admin')) {
+      return;
+    }
+
     const userAgent = navigator.userAgent;
     const isMobile = /mobile|iphone|ipad|android/i.test(userAgent);
     const isPWA = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
@@ -18,7 +23,6 @@ export default function VisitorTracker() {
     else if (/android/i.test(userAgent)) device = "Android";
     else if (isMobile) device = "Móvil";
 
-    // 1. OBTENER O CREAR LA IDENTIDAD DEL DISPOSITIVO (Corregido para TypeScript)
     let deviceId: string;
     const storedId = localStorage.getItem("rs_device_id");
     
@@ -29,7 +33,6 @@ export default function VisitorTracker() {
       localStorage.setItem("rs_device_id", deviceId);
     }
 
-    // 2. GUARDAR EN LA BASE DE DATOS
     const saveVisit = async () => {
       await supabase.from('visitas').insert([
         {
@@ -41,7 +44,7 @@ export default function VisitorTracker() {
 
     saveVisit();
 
-    // 3. MANTENER EL PRESENCE (Radar en vivo)
+    // Canal compartido
     const channel = supabase.channel('global-visitors', {
       config: { presence: { key: sessionId } },
     });
