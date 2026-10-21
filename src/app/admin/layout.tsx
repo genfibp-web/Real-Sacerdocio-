@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X, Globe, Activity } from "lucide-react"; // <-- Activity agregado
+import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X, Globe, Activity } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -13,6 +13,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // 👇 ID del Super Admin
+  const SUPER_ADMIN_ID = "520245ef-6197-4247-8a7d-07a4772be4fc";
 
   useEffect(() => {
     if (pathname === "/admin") {
@@ -32,6 +35,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           .single();
           
         setUser({ 
+          id: session.user.id, // <-- Guardamos el ID para la validación
           email: session.user.email, 
           nombre: perfil?.nombre || "Líder",
           rol: perfil?.rol || "lider" 
@@ -63,14 +67,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Prédicas", href: "/admin/predicas", icon: MessageSquare },
   ];
 
-  if (user?.rol === 'admin') {
+  // 👇 SOLO el Super Admin ve estas opciones
+  if (user?.id === SUPER_ADMIN_ID) {
     menuItems.push({ name: "Usuarios", href: "/admin/usuarios", icon: Users });
-    menuItems.push({ name: "Visitantes", href: "/admin/visitantes", icon: Activity }); // <-- NUEVO BOTÓN
+    menuItems.push({ name: "Visitantes", href: "/admin/visitantes", icon: Activity });
   }
 
   return (
     <div className="flex h-screen bg-real-black text-white overflow-hidden">
-      
       {/* OVERLAY */}
       {isSidebarOpen && (
         <div 
