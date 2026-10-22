@@ -45,7 +45,7 @@ export default function AdminAjustes() {
       const webpBlob = await convertToWebP(file);
       const fileName = `avatar-${user.id}-${Date.now()}.webp`;
       
-      // 2. Subir al bucket 'portadas' (usamos el mismo que ya tenemos configurado)
+      // 2. Subir la nueva imagen
       const { error: uploadError } = await supabase.storage
         .from('portadas')
         .upload(fileName, webpBlob, {
@@ -55,12 +55,21 @@ export default function AdminAjustes() {
 
       if (uploadError) throw uploadError;
 
-      // 3. Obtener la URL pública
+      // 3. Obtener la nueva URL
       const { data: { publicUrl } } = supabase.storage
         .from('portadas')
         .getPublicUrl(fileName);
 
-      // 4. Guardar en la base de datos
+      // 🗑️ 4. BORRAR LA IMAGEN ANTERIOR DEL STORAGE (Para no ocupar espacio)
+      if (user.avatar_url) {
+        // Extraemos el nombre del archivo de la URL vieja
+        const oldFileName = user.avatar_url.split('/').pop();
+        if (oldFileName) {
+          await supabase.storage.from('portadas').remove([oldFileName]);
+        }
+      }
+
+      // 5. Guardar la nueva URL en la base de datos
       const { error: dbError } = await supabase
         .from('perfiles')
         .update({ avatar_url: publicUrl })
@@ -70,7 +79,7 @@ export default function AdminAjustes() {
 
       // Actualizamos la vista
       setUser({ ...user, avatar_url: publicUrl });
-      setFeedback({ type: 'success', message: "Foto de perfil actualizada correctamente." });
+      setFeedback({ type: 'success', message: "Foto de perfil actualizada y espacio liberado." });
       
     } catch (error: any) {
       setFeedback({ type: 'error', message: "Error al subir la foto: " + error.message });
@@ -105,7 +114,6 @@ export default function AdminAjustes() {
             </div>
           )}
           
-          {/* Botón flotante para cambiar foto */}
           <label className="absolute bottom-0 right-0 bg-real-gold hover:bg-yellow-500 text-black p-3 rounded-full cursor-pointer transition-colors shadow-lg">
             {uploading ? <Loader2 className="animate-spin" size={20} /> : <Camera size={20} />}
             <input 
@@ -127,7 +135,7 @@ export default function AdminAjustes() {
             <UserCircle className="text-real-purple" size={24} />
             <div>
               <p className="text-sm font-medium text-white">Foto de Perfil</p>
-              <p className="text-xs text-gray-500">Sube una foto. Se guardará automáticamente en formato WebP optimizado.</p>
+              <p className="text-xs text-gray-500">Sube una foto. Se guardará en WebP y la anterior se borrará automáticamente.</p>
             </div>
           </div>
         </div>
