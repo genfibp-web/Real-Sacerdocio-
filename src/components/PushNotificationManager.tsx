@@ -2,83 +2,75 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Bell, BellOff, Loader2 } from "lucide-react";
+import { Bell, BellOff } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 export default function PushNotificationManager() {
   const pathname = usePathname();
-  const [status, setStatus] = useState<'loading' | 'subscribed' | 'not-subscribed' | 'unsupported'>('loading');
+  const [subscribed, setSubscribed] = useState(false);
 
   useEffect(() => {
-    const checkSubscription = async () => {
-      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-        setStatus('unsupported');
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.ready.then((reg) => {
+        reg.pushManager.getSubscription().then((sub) => {
+          if (sub) setSubscribed(true);
+        });
+      });
+    }
+  }, []);
+
+  const handleSubscribe = async () => {
+    try {
+      if (!("serviceWorker" in navigator)) {
+        alert("Error: El navegador no soporta Service Workers.");
         return;
       }
 
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
-        
-        if (subscription) {
-          // Verificamos si el endpoint de este dispositivo existe en Supabase
-          const { data } = await supabase
-            .from('push_subscriptions')
-            .select('id')
-            .eq('endpoint', subscription.endpoint)
-            .maybeSingle();
-
-          // Si existe en la base de datos, está activo. Si no, está "fantasma" (hay que volver a suscribir).
-          if (data) {
-            setStatus('subscribed');
-          } else {
-            setStatus('not-subscribed');
-          }
-        } else {
-          setStatus('not-subscribed');
-        }
-      } catch (error) {
-        console.error("Error al verificar suscripción", error);
-        setStatus('not-subscribed');
+      // 1. Pedir permisos
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        alert("No diste permiso para las notificaciones.");
+        return;
       }
-    };
 
-    checkSubscription();
-  }, []);
+      const reg = await navigator.serviceWorker.ready;
+      
+      // 2. Verificar si la llave VAPID existe
+      if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
+        alert("Error Crítico: La llave pública VAPID no está configurada.");
+        return;
+      }
 
-  const subscribe = async () => {
-    if (!("serviceWorker" in navigator)) return;
+      // 3. Crear la suscripción
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY),
+      });
 
-    // 1. Si hay una suscripción vieja en el navegador, la borramos primero
-    const registration = await navigator.serviceWorker.ready;
-    const existingSubscription = await registration.pushManager.getSubscription();
-    if (existingSubscription) {
-      await existingSubscription.unsubscribe();
+      const { endpoint, keys } = sub.toJSON() as any;
+      const deviceId = localStorage.getItem("rs_device_id");
+
+      // 4. Guardar en Supabase (AHORA SÍ VERIFICAMOS EL ERROR)
+      const { error } = await supabase.from('push_subscriptions').upsert({
+        endpoint: endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        device_id: deviceId || "desconocido"
+      }, { onConflict: 'endpoint' });
+
+      if (error) {
+        // ¡AQUÍ VEREMOS EL ERROR REAL EN PANTALLA!
+        alert("Error de Supabase: " + error.message);
+        console.error("Detalle del error:", error);
+      } else {
+        setSubscribed(true);
+        alert("¡Notificaciones activadas y guardadas en la base de datos exitosamente!");
+      }
+
+    } catch (error: any) {
+      alert("Error inesperado: " + error.message);
+      console.error(error);
     }
-
-    // 2. Pedimos permiso
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") return;
-
-    // 3. Creamos la nueva suscripción
-    const newSubscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
-    });
-
-    const { endpoint, keys } = newSubscription.toJSON() as any;
-    
-    // 4. La guardamos en Supabase
-    const deviceId = localStorage.getItem("rs_device_id");
-
-    await supabase.from('push_subscriptions').upsert({
-      endpoint: endpoint,
-      p256dh: keys.p256dh,
-      auth: keys.auth,
-      device_id: deviceId
-    }, { onConflict: 'endpoint' });
-
-    setStatus('subscribed');
   };
 
   const urlBase64ToUint8Array = (base64String: string) => {
@@ -90,22 +82,16 @@ export default function PushNotificationManager() {
     return outputArray;
   };
 
-  if (pathname.startsWith('/admin') || status === 'loading' || status === 'unsupported') {
-    return null;
-  }
+  if (pathname.startsWith('/admin')) return null;
 
   return (
     <button
-      onClick={subscribe}
-      disabled={status === 'subscribed'}
-      className={`fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 p-4 rounded-full shadow-2xl transition-all hover:scale-105 flex items-center justify-center ${
-        status === 'subscribed' 
-          ? 'bg-green-600/50 text-white cursor-default' 
-          : 'bg-real-purple hover:bg-real-blue text-white'
-      }`}
-      title={status === 'subscribed' ? "Notificaciones activadas" : "Activar notificaciones"}
+      onClick={handleSubscribe}
+      className={`fixed bottom-20 right-4 z-50 p-4 rounded-full shadow-2xl ${
+        subscribed ? 'bg-green-600' : 'bg-real-purple'
+      } text-white`}
     >
-      {status === 'subscribed' ? <Bell size={24} /> : <BellOff size={24} />}
+      {subscribed ? <Bell size={24} /> : <BellOff size={24} />}
     </button>
   );
 }
