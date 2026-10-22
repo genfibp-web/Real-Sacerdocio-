@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { convertToWebPAvatar } from "@/lib/imageUtils"; 
-import { Camera, Loader2, UserCircle, CheckCircle, AlertTriangle, X, Trash2 } from "lucide-react";
+import { Camera, Loader2, CheckCircle, AlertTriangle, X, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function AdminAjustes() {
@@ -74,9 +74,8 @@ export default function AdminAjustes() {
       if (dbError) throw dbError;
 
       setUser({ ...user, avatar_url: publicUrl });
-      setFeedback({ type: 'success', message: "Foto actualizada al instante." });
+      setFeedback({ type: 'success', message: "Foto actualizada correctamente." });
       
-      // 🪄 GRITAMOS EL EVENTO PARA QUE EL HEADER SE ACTUALICE AL INSTANTE
       window.dispatchEvent(new CustomEvent('avatarUpdated', { detail: { newUrl: publicUrl } }));
 
     } catch (error: any) {
@@ -107,7 +106,6 @@ export default function AdminAjustes() {
       setUser({ ...user, avatar_url: null });
       setFeedback({ type: 'success', message: "Foto de perfil eliminada." });
 
-      // 🪄 GRITAMOS EL EVENTO PARA QUE EL HEADER VUELVA A LA INICIAL AL INSTANTE
       window.dispatchEvent(new CustomEvent('avatarUpdated', { detail: { newUrl: null } }));
 
     } catch (error: any) {
@@ -123,12 +121,25 @@ export default function AdminAjustes() {
     <div className="max-w-2xl mx-auto space-y-8 relative">
       <div>
         <h1 className="font-serif text-3xl font-bold text-white mb-2">Mi Perfil</h1>
-        <p className="text-gray-400">Administra tu información personal y tu foto de perfil.</p>
+        <p className="text-gray-400">Administra tu información personal.</p>
       </div>
 
-      <div className="bg-real-dark border border-white/10 rounded-3xl p-8 flex flex-col items-center">
+      <div className="bg-real-dark border border-white/10 rounded-3xl p-8 flex flex-col items-center relative">
         
-        <div className="relative group mb-6">
+        {/* 🗑️ BOTÓN DE ELIMINAR (Arriba a la derecha, discreto) */}
+        {user?.avatar_url && (
+          <button 
+            onClick={handleDeleteAvatar} 
+            disabled={uploading} 
+            className="absolute top-6 right-6 p-2 text-red-500/70 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" 
+            title="Eliminar foto de perfil"
+          >
+            <Trash2 size={20} />
+          </button>
+        )}
+
+        {/* FOTO DE PERFIL */}
+        <div className="relative group mb-6 mt-4">
           {user?.avatar_url ? (
             <img 
               src={user.avatar_url} 
@@ -152,24 +163,9 @@ export default function AdminAjustes() {
         <p className="text-gray-400 capitalize">{user?.rol === 'admin' ? 'Administrador' : `Líder de ${user?.comunidad_slug}`}</p>
         <p className="text-sm text-gray-500 mt-1">{user?.email}</p>
 
-        <div className="w-full mt-8 pt-8 border-t border-white/10 space-y-4">
-          <div className="flex items-center justify-between bg-white/5 p-4 rounded-xl">
-            <div className="flex items-center gap-3">
-              <UserCircle className="text-real-purple" size={24} />
-              <div>
-                <p className="text-sm font-medium text-white">Foto de Perfil</p>
-                <p className="text-xs text-gray-500">Se recorta a 800x800px y se actualiza en vivo.</p>
-              </div>
-            </div>
-            {user?.avatar_url && (
-              <button onClick={handleDeleteAvatar} disabled={uploading} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Eliminar foto">
-                <Trash2 size={20} />
-              </button>
-            )}
-          </div>
-        </div>
       </div>
 
+      {/* VISOR DE IMAGEN */}
       {viewImage && user?.avatar_url && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setViewImage(false)}>
           <button className="absolute top-6 right-6 text-white bg-white/10 hover:bg-white/20 p-2 rounded-full" onClick={() => setViewImage(false)}><X size={24} /></button>
@@ -177,6 +173,7 @@ export default function AdminAjustes() {
         </div>
       )}
 
+      {/* MODAL DE FEEDBACK */}
       {feedback && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" onClick={() => setFeedback(null)}></div>
