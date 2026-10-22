@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-// 👇 Agregamos Send para Notificaciones
-import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X, Globe, Activity, Contact, DollarSign, Camera, BarChart3, Send } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X, Globe, Activity, Contact, DollarSign, Camera, BarChart3, Send, Settings } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       } else {
         const { data: perfil } = await supabase
           .from('perfiles')
-          .select('nombre, rol')
+          .select('nombre, rol, avatar_url') 
           .eq('id', session.user.id)
           .single();
           
@@ -38,7 +37,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           id: session.user.id, 
           email: session.user.email, 
           nombre: perfil?.nombre || "Líder",
-          rol: perfil?.rol || "lider" 
+          rol: perfil?.rol || "lider",
+          avatar_url: perfil?.avatar_url 
         });
         setIsLoading(false);
       }
@@ -68,10 +68,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Miembros", href: "/admin/miembros", icon: Contact },
     { name: "Finanzas", href: "/admin/finanzas", icon: DollarSign },
     { name: "Portadas", href: "/admin/comunidades", icon: Camera },
-    { name: "Notificaciones", href: "/admin/notificaciones", icon: Send }, // <-- NUEVO BOTÓN
+    { name: "Notificaciones", href: "/admin/notificaciones", icon: Send },
+    // { name: "Ajustes", href: "/admin/ajustes", icon: Settings }, <-- ELIMINADO
   ];
 
-  // 👇 SOLO el Super Admin ve estas opciones
   if (user?.id === SUPER_ADMIN_ID) {
     menuItems.push({ name: "Usuarios", href: "/admin/usuarios", icon: Users });
     menuItems.push({ name: "Visitantes", href: "/admin/visitantes", icon: Activity });
@@ -135,11 +135,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <h2 className="text-base md:text-lg font-medium text-white truncate">Bienvenido, {user?.nombre}</h2>
           </div>
           
-          <div className="flex items-center gap-4">
-             <div className="w-10 h-10 bg-real-purple rounded-full flex items-center justify-center font-bold uppercase flex-shrink-0">
-               {user?.nombre?.charAt(0) || "L"}
-             </div>
-          </div>
+          {/* FOTO DE PERFIL (Único acceso a Ajustes) */}
+          <Link href="/admin/ajustes" className="flex items-center hover:opacity-80 transition-opacity" title="Mi Perfil">
+             {user?.avatar_url ? (
+               <img 
+                 src={user.avatar_url} 
+                 alt="Avatar" 
+                 className="w-12 h-12 rounded-full object-cover border-2 border-real-purple shadow-md" 
+               />
+             ) : (
+               <div className="w-12 h-12 bg-real-purple rounded-full flex items-center justify-center font-bold text-lg uppercase flex-shrink-0 border-2 border-white/10">
+                 {user?.nombre?.charAt(0) || "L"}
+               </div>
+             )}
+          </Link>
         </header>
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
           {children}

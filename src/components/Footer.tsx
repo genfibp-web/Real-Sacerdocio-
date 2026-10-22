@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
-import PWAInstallButton from "./PWAInstallButton"; // <-- Importación en su lugar
+import { MapPin, UserPlus } from "lucide-react"; // <-- Agregamos UserPlus
+import PWAInstallButton from "./PWAInstallButton"; 
 
 export default function Footer() {
   const googleMapsUrl = "https://www.google.com/maps/search/?api=1&query=18.44795697205258,-69.01268224147996";
@@ -80,7 +80,17 @@ export default function Footer() {
         
         {/* Contenedor de los Botones */}
         <div className="flex flex-wrap justify-center items-center gap-2 md:gap-3 order-1 md:order-2">
+          
+          {/* 👇 NUEVO BOTÓN DE REGISTRO 👇 */}
+          <Link 
+            href="/registro" 
+            className="inline-flex items-center gap-1 bg-real-purple hover:bg-real-blue text-white px-3 py-1 md:px-5 md:py-2.5 rounded-full border border-real-purple/50 shadow-[0_0_15px_rgba(76,29,149,0.3)] transition-all text-[10px] md:text-xs font-bold transform hover:scale-105"
+          >
+            <UserPlus size={14} /> Únete a la Familia
+          </Link>
+
           <PWAInstallButton />
+          
           <Link 
             href="/admin" 
             className="inline-flex items-center gap-1 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white px-3 py-1 md:px-5 md:py-2.5 rounded-full border border-white/10 transition-all text-[10px] md:text-xs font-medium"
