@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 export default function AdminRecursos() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false); // Para la animación de la luz
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [user, setUser] = useState<any>(null);
   
@@ -29,8 +29,9 @@ export default function AdminRecursos() {
   };
 
   useEffect(() => {
+    let activeChannel: any = null;
+
     const fetchData = async () => {
-      // 1. Verificación de seguridad (solo la primera vez)
       if (!user) {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session || session.user.id !== SUPER_ADMIN_ID) {
@@ -40,7 +41,6 @@ export default function AdminRecursos() {
         setUser(session.user);
       }
 
-      // 2. Encendemos la luz de "Actualizando..."
       setIsRefreshing(true);
 
       try {
@@ -49,42 +49,41 @@ export default function AdminRecursos() {
         const { count: profilesCount } = await supabase.from('perfiles').select('*', { count: 'exact', head: true });
         const { count: visitasCount } = await supabase.from('visitas').select('*', { count: 'exact', head: true });
 
-        const testChannel = supabase.channel('resource-test');
-        testChannel.subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            const state = testChannel.presenceState();
-            setMetrics(prev => ({ ...prev, realtime: Object.keys(state).length }));
-            testChannel.unsubscribe();
-          }
-        });
-
-        setMetrics({
+        setMetrics(prev => ({
+          ...prev,
           db: { bytes: Number(dbData?.[0]?.size_bytes || 0), pretty: dbData?.[0]?.size_pretty || "0 MB" },
           storage: { bytes: Number(storageData?.[0]?.size_bytes || 0), pretty: storageData?.[0]?.size_pretty || "0 MB" },
-          realtime: 0,
           profiles: profilesCount || 0,
           visitas: visitasCount || 0,
-        });
+        }));
 
-        // Guardamos la hora exacta de la última actualización
         setLastUpdated(new Date());
-
       } catch (error) {
         console.error("Error cargando métricas:", error);
       } finally {
-        // Apagamos la luz de "Actualizando..."
         setIsRefreshing(false);
         setLoading(false);
       }
     };
 
-    // Carga inicial
     fetchData();
 
-    // 🔄 MAGIA: Actualizamos cada 10 segundos automáticamente
+    // 🔄 CONEXIÓN REAL AL RADAR DE VISITANTES
+    if (!activeChannel) {
+      activeChannel = supabase.channel('global-visitors');
+      
+      activeChannel.on('presence', { event: 'sync' }, () => {
+        const state = activeChannel.presenceState();
+        setMetrics(prev => ({ ...prev, realtime: Object.keys(state).length }));
+      }).subscribe();
+    }
+
     const interval = setInterval(fetchData, 10000); 
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (activeChannel) supabase.removeChannel(activeChannel);
+    };
   }, [router, user]);
 
   const calculatePercentage = (current: number, max: number) => {
@@ -102,7 +101,6 @@ export default function AdminRecursos() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 relative">
       
-      {/* HEADER CON LUZ PARPADEANTE */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-real-purple/20 rounded-xl text-real-purple">
@@ -114,12 +112,9 @@ export default function AdminRecursos() {
           </div>
         </div>
 
-        {/* INDICADOR EN VIVO */}
         <div className="flex items-center gap-3 bg-real-dark border border-white/10 px-4 py-2 rounded-xl">
           <div className="relative flex h-3 w-3">
-            {/* El halo que hace "ping" */}
             <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isRefreshing ? 'bg-yellow-400' : 'bg-green-400'}`}></span>
-            {/* El punto central */}
             <span className={`relative inline-flex rounded-full h-3 w-3 ${isRefreshing ? 'bg-yellow-500' : 'bg-green-500'}`}></span>
           </div>
           <div className="flex flex-col">
@@ -135,10 +130,8 @@ export default function AdminRecursos() {
         </div>
       </div>
 
-      {/* TARJETAS DE MÉTRICAS PRINCIPALES */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        {/* Base de Datos */}
         <div className="bg-real-dark border border-white/10 rounded-2xl p-6 space-y-4">
           <div className="flex items-center gap-3 text-blue-400 mb-2">
             <Database size={24} />
@@ -159,7 +152,6 @@ export default function AdminRecursos() {
           </p>
         </div>
 
-        {/* Almacenamiento */}
         <div className="bg-real-dark border border-white/10 rounded-2xl p-6 space-y-4">
           <div className="flex items-center gap-3 text-purple-400 mb-2">
             <HardDrive size={24} />
@@ -180,7 +172,6 @@ export default function AdminRecursos() {
           </p>
         </div>
 
-        {/* Conexiones Realtime */}
         <div className="bg-real-dark border border-white/10 rounded-2xl p-6 space-y-4">
           <div className="flex items-center gap-3 text-green-400 mb-2">
             <Activity size={24} />
@@ -202,7 +193,6 @@ export default function AdminRecursos() {
         </div>
       </div>
 
-      {/* SECCIÓN DE DATOS DE LA IGLESIA */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-real-dark border border-white/10 rounded-2xl p-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -225,7 +215,6 @@ export default function AdminRecursos() {
         </div>
       </div>
 
-      {/* NOTA DE ADVERTENCIA */}
       <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-4 flex items-start gap-3">
         <AlertTriangle className="text-yellow-500 shrink-0 mt-0.5" size={20} />
         <div className="text-sm text-yellow-200/80">
