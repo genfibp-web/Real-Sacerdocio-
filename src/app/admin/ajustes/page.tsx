@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { convertToWebP } from "@/lib/imageUtils";
-import { Camera, Loader2, UserCircle, CheckCircle, AlertTriangle, X } from "lucide-react";
+import { convertToWebPAvatar } from "@/lib/imageUtils"; 
+import { Camera, Loader2, UserCircle, CheckCircle, AlertTriangle, X, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function AdminAjustes() {
@@ -11,7 +11,7 @@ export default function AdminAjustes() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [viewImage, setViewImage] = useState(false); // Estado para el visor
+  const [viewImage, setViewImage] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   useEffect(() => {
@@ -28,13 +28,18 @@ export default function AdminAjustes() {
         .eq('id', session.user.id)
         .single();
 
-      if (perfil) {
-        setUser({ ...perfil, email: session.user.email });
-      }
+      if (perfil) setUser({ ...perfil, email: session.user.email });
       setLoading(false);
     };
     fetchUser();
   }, [router]);
+
+  const getFileNameFromUrl = (url: string) => {
+    if (!url) return null;
+    const parts = url.split('/');
+    const lastPart = parts[parts.length - 1];
+    return lastPart.split('?')[0]; 
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -42,30 +47,29 @@ export default function AdminAjustes() {
 
     setUploading(true);
     try {
-      const webpBlob = await convertToWebP(file);
+      // 1. Convertir y recortar (800x800)
+      const webpFile = await convertToWebPAvatar(file, 800, 0.9);
       const fileName = `avatar-${user.id}-${Date.now()}.webp`;
       
+      // 2. Subir al nuevo bucket 'perfiles'
       const { error: uploadError } = await supabase.storage
-        .from('portadas')
-        .upload(fileName, webpBlob, {
-          contentType: 'image/webp',
-          upsert: true
-        });
+        .from('perfiles') // <-- CAMBIADO AQUÍ
+        .upload(fileName, webpFile, { contentType: 'image/webp', upsert: true });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('portadas')
-        .getPublicUrl(fileName);
+      const { data: { publicUrl } } = supabase.storage.from('perfiles').getPublicUrl(fileName); // <-- CAMBIADO AQUÍ
 
-      // Borrar la imagen anterior para no ocupar espacio
+      // 3. Borrar la anterior del bucket 'perfiles'
       if (user.avatar_url) {
-        const oldFileName = user.avatar_url.split('/').pop();
+        const oldFileName = getFileNameFromUrl(user.avatar_url);
         if (oldFileName) {
-          await supabase.storage.from('portadas').remove([oldFileName]);
+          const { error: removeError } = await supabase.storage.from('perfiles').remove([oldFileName]); // <-- CAMBIADO AQUÍ
+          if (removeError) console.error("Error al borrar foto anterior:", removeError);
         }
       }
 
+      // 4. Guardar en la DB
       const { error: dbError } = await supabase
         .from('perfiles')
         .update({ avatar_url: publicUrl })
@@ -74,10 +78,44 @@ export default function AdminAjustes() {
       if (dbError) throw dbError;
 
       setUser({ ...user, avatar_url: publicUrl });
-      setFeedback({ type: 'success', message: "Foto de perfil actualizada." });
+      setFeedback({ type: 'success', message: "Foto actualizada (800x800px)." });
       
+      window.dispatchEvent(new CustomEvent('avatarUpdated', { detail: { newUrl: publicUrl } }));
+
     } catch (error: any) {
       setFeedback({ type: 'error', message: "Error al subir la foto: " + error.message });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    if (!user || !user.avatar_url) return;
+    setUploading(true);
+
+    try {
+      // 1. Borrar del bucket 'perfiles'
+      const fileName = getFileNameFromUrl(user.avatar_url);
+      if (fileName) {
+        const { error: removeError } = await supabase.storage.from('perfiles').remove([fileName]); // <-- CAMBIADO AQUÍ
+        if (removeError) throw new Error("No se pudo borrar el archivo físico: " + removeError.message);
+      }
+
+      // 2. Borrar de la DB
+      const { error: dbError } = await supabase
+        .from('perfiles')
+        .update({ avatar_url: null })
+        .eq('id', user.id);
+
+      if (dbError) throw dbError;
+
+      setUser({ ...user, avatar_url: null });
+      setFeedback({ type: 'success', message: "Foto de perfil eliminada correctamente." });
+
+      window.dispatchEvent(new CustomEvent('avatarUpdated', { detail: { newUrl: null } }));
+
+    } catch (error: any) {
+      setFeedback({ type: 'error', message: "Error al eliminar: " + error.message });
     } finally {
       setUploading(false);
     }
@@ -87,7 +125,6 @@ export default function AdminAjustes() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 relative">
-      
       <div>
         <h1 className="font-serif text-3xl font-bold text-white mb-2">Mi Perfil</h1>
         <p className="text-gray-400">Administra tu información personal y tu foto de perfil.</p>
@@ -95,7 +132,6 @@ export default function AdminAjustes() {
 
       <div className="bg-real-dark border border-white/10 rounded-3xl p-8 flex flex-col items-center">
         
-        {/* FOTO DE PERFIL CON VISOR */}
         <div className="relative group mb-6">
           {user?.avatar_url ? (
             <img 
@@ -112,13 +148,7 @@ export default function AdminAjustes() {
           
           <label className="absolute bottom-0 right-0 bg-real-gold hover:bg-yellow-500 text-black p-3 rounded-full cursor-pointer transition-colors shadow-lg">
             {uploading ? <Loader2 className="animate-spin" size={20} /> : <Camera size={20} />}
-            <input 
-              type="file" 
-              accept="image/*" 
-              onChange={handleImageUpload} 
-              className="hidden" 
-              disabled={uploading}
-            />
+            <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploading} />
           </label>
         </div>
 
@@ -126,33 +156,31 @@ export default function AdminAjustes() {
         <p className="text-gray-400 capitalize">{user?.rol === 'admin' ? 'Administrador' : `Líder de ${user?.comunidad_slug}`}</p>
         <p className="text-sm text-gray-500 mt-1">{user?.email}</p>
 
-        <div className="w-full mt-8 pt-8 border-t border-white/10 flex flex-col gap-4">
-          <div className="flex items-center gap-3 bg-white/5 p-4 rounded-xl">
-            <UserCircle className="text-real-purple" size={24} />
-            <div>
-              <p className="text-sm font-medium text-white">Foto de Perfil</p>
-              <p className="text-xs text-gray-500">Sube una foto. Haz clic en ella para verla en grande.</p>
+        <div className="w-full mt-8 pt-8 border-t border-white/10 space-y-4">
+          <div className="flex items-center justify-between bg-white/5 p-4 rounded-xl">
+            <div className="flex items-center gap-3">
+              <UserCircle className="text-real-purple" size={24} />
+              <div>
+                <p className="text-sm font-medium text-white">Foto de Perfil</p>
+                <p className="text-xs text-gray-500">Se recorta a 800x800px y se guarda en la carpeta 'perfiles'.</p>
+              </div>
             </div>
+            {user?.avatar_url && (
+              <button onClick={handleDeleteAvatar} disabled={uploading} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Eliminar foto">
+                <Trash2 size={20} />
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* 🔍 VISOR DE IMAGEN (LIGHTBOX) */}
       {viewImage && user?.avatar_url && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setViewImage(false)}>
-          <button className="absolute top-6 right-6 text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors" onClick={() => setViewImage(false)}>
-            <X size={24} />
-          </button>
-          <img 
-            src={user.avatar_url} 
-            alt="Foto en grande" 
-            className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl" 
-            onClick={(e) => e.stopPropagation()} // Evita que se cierre si hacen clic en la foto
-          />
+          <button className="absolute top-6 right-6 text-white bg-white/10 hover:bg-white/20 p-2 rounded-full" onClick={() => setViewImage(false)}><X size={24} /></button>
+          <img src={user.avatar_url} alt="Foto" className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl" onClick={(e) => e.stopPropagation()} />
         </div>
       )}
 
-      {/* MODAL DE FEEDBACK */}
       {feedback && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" onClick={() => setFeedback(null)}></div>
