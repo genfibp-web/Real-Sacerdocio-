@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X, Globe, Activity, Contact, DollarSign } from "lucide-react";
+// 👇 Agregamos Camera para Portadas
+import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X, Globe, Activity, Contact, DollarSign, Camera } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -34,7 +35,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           .single();
           
         setUser({ 
-          id: session.user.id,
+          id: session.user.id, 
           email: session.user.email, 
           nombre: perfil?.nombre || "Líder",
           rol: perfil?.rol || "lider" 
@@ -66,6 +67,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Prédicas", href: "/admin/predicas", icon: MessageSquare },
     { name: "Miembros", href: "/admin/miembros", icon: Contact },
     { name: "Finanzas", href: "/admin/finanzas", icon: DollarSign },
+    { name: "Portadas", href: "/admin/comunidades", icon: Camera }, // <-- NUEVO BOTÓN
   ];
 
   if (user?.id === SUPER_ADMIN_ID) {

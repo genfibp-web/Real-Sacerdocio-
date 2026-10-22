@@ -1,6 +1,30 @@
+"use client"; // <-- IMPORTANTE: Necesario para usar estados y efectos
+
+import { useState, useEffect } from "react";
 import Image from "next/image";
+import { supabase } from "@/lib/supabase";
 
 export default function About() {
+  // 1. Dejamos la imagen de Unsplash como respaldo (Fallback) por si no hay nada en la base de datos
+  const [imageUrl, setImageUrl] = useState("https://images.unsplash.com/photo-1438232992991-995b7058bbb3?q=80&w=1000&auto=format&fit=crop");
+
+  // 2. Consultamos la base de datos al cargar el componente
+  useEffect(() => {
+    const fetchImage = async () => {
+      const { data } = await supabase
+        .from('configuracion')
+        .select('valor')
+        .eq('clave', 'home_bienvenida')
+        .single();
+      
+      // Si el admin subió una imagen, la usamos
+      if (data?.valor) {
+        setImageUrl(data.valor);
+      }
+    };
+    fetchImage();
+  }, []);
+
   return (
     // Redujimos el padding vertical de py-24 a py-12 en móvil
     <section className="py-12 md:py-24 px-6 max-w-7xl mx-auto w-full relative z-10">
@@ -10,7 +34,7 @@ export default function About() {
         {/* La imagen ahora es más baja en móvil (h-64 en vez de h-400) */}
         <div className="w-full md:w-1/2 relative h-64 md:h-[400px] rounded-3xl overflow-hidden border border-white/10">
           <Image 
-            src="https://images.unsplash.com/photo-1438232992991-995b7058bbb3?q=80&w=1000&auto=format&fit=crop" 
+            src={imageUrl} // <-- AQUÍ ESTÁ LA MAGIA: Reemplazamos la URL fija por el estado dinámico
             alt="Comunidad Real Sacerdocio" 
             fill 
             className="object-cover"
