@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-// 👇 Agregamos Camera para Portadas
-import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X, Globe, Activity, Contact, DollarSign, Camera } from "lucide-react";
+// 👇 Agregamos BarChart3 para Recursos
+import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X, Globe, Activity, Contact, DollarSign, Camera, BarChart3 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -67,12 +67,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Prédicas", href: "/admin/predicas", icon: MessageSquare },
     { name: "Miembros", href: "/admin/miembros", icon: Contact },
     { name: "Finanzas", href: "/admin/finanzas", icon: DollarSign },
-    { name: "Portadas", href: "/admin/comunidades", icon: Camera }, // <-- NUEVO BOTÓN
+    { name: "Portadas", href: "/admin/comunidades", icon: Camera },
   ];
 
+  // 👇 SOLO el Super Admin ve estas opciones
   if (user?.id === SUPER_ADMIN_ID) {
     menuItems.push({ name: "Usuarios", href: "/admin/usuarios", icon: Users });
     menuItems.push({ name: "Visitantes", href: "/admin/visitantes", icon: Activity });
+    menuItems.push({ name: "Recursos", href: "/admin/recursos", icon: BarChart3 }); // <-- NUEVO BOTÓN
   }
 
   return (
