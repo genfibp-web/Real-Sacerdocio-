@@ -8,16 +8,34 @@ import { usePathname } from "next/navigation";
 export default function PushNotificationManager() {
   const pathname = usePathname();
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Verificar si ya está suscrito
-    if ("serviceWorker" in navigator && "PushManager" in window) {
-      navigator.serviceWorker.ready.then((registration) => {
-        registration.pushManager.getSubscription().then((subscription) => {
-          setIsSubscribed(!!subscription);
-        });
-      });
-    }
+    const checkSubscription = async () => {
+      if ("serviceWorker" in navigator && "PushManager" in window) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          const subscription = await registration.pushManager.getSubscription();
+          
+          if (subscription) {
+            // Verificamos si el endpoint de este dispositivo existe en Supabase
+            const { data } = await supabase
+              .from('push_subscriptions')
+              .select('id')
+              .eq('endpoint', subscription.endpoint)
+              .single();
+
+            // Si existe en la base de datos, está activo. Si no, está "fantasma".
+            setIsSubscribed(!!data);
+          }
+        } catch (error) {
+          console.error("Error al verificar suscripción", error);
+        }
+      }
+      setLoading(false);
+    };
+
+    checkSubscription();
   }, []);
 
   const subscribe = async () => {
@@ -35,35 +53,18 @@ export default function PushNotificationManager() {
 
     const { endpoint, keys } = subscription.toJSON() as any;
     
-    // Obtenemos el device_id de la PWA para vincular el dispositivo
+    // Obtenemos el device_id de la PWA
     const deviceId = localStorage.getItem("rs_device_id");
 
     await supabase.from('push_subscriptions').upsert({
       endpoint: endpoint,
       p256dh: keys.p256dh,
       auth: keys.auth,
-      device_id: deviceId // <-- Guardamos el ID de la PWA para saber quién es
+      device_id: deviceId
     }, { onConflict: 'endpoint' });
 
     setIsSubscribed(true);
   };
-
-  // 🪄 AUTO-SUSCRIPCIÓN: Si tiene la PWA abierta, intentamos suscribir automáticamente
-  useEffect(() => {
-    const autoSubscribe = async () => {
-      // Solo intentamos si el navegador soporta notificaciones y no está suscrito
-      if ("Notification" in window && "serviceWorker" in navigator && !isSubscribed) {
-        // Si el permiso ya está concedido (porque ya dijo que sí antes)
-        if (Notification.permission === "granted") {
-          await subscribe();
-        }
-      }
-    };
-    
-    // Esperamos un momento a que cargue la página para no bloquear
-    const timer = setTimeout(autoSubscribe, 3000);
-    return () => clearTimeout(timer);
-  }, [isSubscribed]);
 
   const urlBase64ToUint8Array = (base64String: string) => {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -74,8 +75,7 @@ export default function PushNotificationManager() {
     return outputArray;
   };
 
-  // 🛡️ SI ESTAMOS EN EL PANEL DE ADMIN, NO MOSTRAMOS NADA
-  if (pathname.startsWith('/admin')) {
+  if (pathname.startsWith('/admin') || loading) {
     return null;
   }
 
@@ -85,7 +85,7 @@ export default function PushNotificationManager() {
       disabled={isSubscribed}
       className={`fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 p-4 rounded-full shadow-2xl transition-all hover:scale-105 ${
         isSubscribed 
-          ? 'bg-green-600 text-white' // Si ya está suscrito, se pone verde
+          ? 'bg-green-600 text-white' 
           : 'bg-real-purple hover:bg-real-blue text-white'
       }`}
       title={isSubscribed ? "Notificaciones activadas" : "Activar notificaciones"}
