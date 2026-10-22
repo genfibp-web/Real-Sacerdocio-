@@ -11,6 +11,7 @@ export default function AdminAjustes() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [viewImage, setViewImage] = useState(false); // Estado para el visor
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   useEffect(() => {
@@ -41,11 +42,9 @@ export default function AdminAjustes() {
 
     setUploading(true);
     try {
-      // 1. Convertir a WebP
       const webpBlob = await convertToWebP(file);
       const fileName = `avatar-${user.id}-${Date.now()}.webp`;
       
-      // 2. Subir la nueva imagen
       const { error: uploadError } = await supabase.storage
         .from('portadas')
         .upload(fileName, webpBlob, {
@@ -55,21 +54,18 @@ export default function AdminAjustes() {
 
       if (uploadError) throw uploadError;
 
-      // 3. Obtener la nueva URL
       const { data: { publicUrl } } = supabase.storage
         .from('portadas')
         .getPublicUrl(fileName);
 
-      // 🗑️ 4. BORRAR LA IMAGEN ANTERIOR DEL STORAGE (Para no ocupar espacio)
+      // Borrar la imagen anterior para no ocupar espacio
       if (user.avatar_url) {
-        // Extraemos el nombre del archivo de la URL vieja
         const oldFileName = user.avatar_url.split('/').pop();
         if (oldFileName) {
           await supabase.storage.from('portadas').remove([oldFileName]);
         }
       }
 
-      // 5. Guardar la nueva URL en la base de datos
       const { error: dbError } = await supabase
         .from('perfiles')
         .update({ avatar_url: publicUrl })
@@ -77,9 +73,8 @@ export default function AdminAjustes() {
 
       if (dbError) throw dbError;
 
-      // Actualizamos la vista
       setUser({ ...user, avatar_url: publicUrl });
-      setFeedback({ type: 'success', message: "Foto de perfil actualizada y espacio liberado." });
+      setFeedback({ type: 'success', message: "Foto de perfil actualizada." });
       
     } catch (error: any) {
       setFeedback({ type: 'error', message: "Error al subir la foto: " + error.message });
@@ -100,13 +95,14 @@ export default function AdminAjustes() {
 
       <div className="bg-real-dark border border-white/10 rounded-3xl p-8 flex flex-col items-center">
         
-        {/* FOTO DE PERFIL */}
+        {/* FOTO DE PERFIL CON VISOR */}
         <div className="relative group mb-6">
           {user?.avatar_url ? (
             <img 
               src={user.avatar_url} 
               alt="Avatar" 
-              className="w-32 h-32 rounded-full object-cover border-4 border-real-purple shadow-2xl" 
+              onClick={() => setViewImage(true)}
+              className="w-32 h-32 rounded-full object-cover border-4 border-real-purple shadow-2xl cursor-pointer hover:opacity-80 transition-opacity" 
             />
           ) : (
             <div className="w-32 h-32 rounded-full bg-real-purple flex items-center justify-center text-5xl font-bold text-white border-4 border-white/10 shadow-2xl">
@@ -135,12 +131,28 @@ export default function AdminAjustes() {
             <UserCircle className="text-real-purple" size={24} />
             <div>
               <p className="text-sm font-medium text-white">Foto de Perfil</p>
-              <p className="text-xs text-gray-500">Sube una foto. Se guardará en WebP y la anterior se borrará automáticamente.</p>
+              <p className="text-xs text-gray-500">Sube una foto. Haz clic en ella para verla en grande.</p>
             </div>
           </div>
         </div>
       </div>
 
+      {/* 🔍 VISOR DE IMAGEN (LIGHTBOX) */}
+      {viewImage && user?.avatar_url && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setViewImage(false)}>
+          <button className="absolute top-6 right-6 text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors" onClick={() => setViewImage(false)}>
+            <X size={24} />
+          </button>
+          <img 
+            src={user.avatar_url} 
+            alt="Foto en grande" 
+            className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl" 
+            onClick={(e) => e.stopPropagation()} // Evita que se cierre si hacen clic en la foto
+          />
+        </div>
+      )}
+
+      {/* MODAL DE FEEDBACK */}
       {feedback && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" onClick={() => setFeedback(null)}></div>

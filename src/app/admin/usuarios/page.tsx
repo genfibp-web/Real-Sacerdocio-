@@ -11,6 +11,9 @@ export default function UsuariosAdmin() {
   const [loading, setLoading] = useState(false);
   const [usuarios, setUsuarios] = useState<any[]>([]);
   
+  // Estado para el visor de imágenes
+  const [viewingAvatar, setViewingAvatar] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     nombre: "",
     email: "",
@@ -38,7 +41,6 @@ export default function UsuariosAdmin() {
         return;
       }
 
-      // 🛡️ SOLO EL SUPER ADMIN PUEDE VER ESTA PÁGINA
       if (session.user.id !== SUPER_ADMIN_ID) {
         router.push("/admin/dashboard"); 
         return;
@@ -166,9 +168,20 @@ export default function UsuariosAdmin() {
                 <div key={user.id} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className="relative">
-                      <div className="w-10 h-10 bg-real-purple/20 text-real-purple rounded-full flex items-center justify-center font-bold">
-                        {user.nombre.charAt(0)}
-                      </div>
+                      {/* 👇 AVATAR CLICABLE (Con fallback rápido) 👇 */}
+                      {user.avatar_url ? (
+                        <img 
+                          src={user.avatar_url} 
+                          alt={user.nombre} 
+                          onClick={() => setViewingAvatar(user.avatar_url)}
+                          className="w-10 h-10 rounded-full object-cover border border-white/20 shadow-sm cursor-pointer hover:scale-110 transition-transform" 
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-real-purple/20 text-real-purple rounded-full flex items-center justify-center font-bold">
+                          {user.nombre.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <p className={`font-medium ${user.id === SUPER_ADMIN_ID ? 'text-real-gold' : 'text-white'}`}>
@@ -206,6 +219,21 @@ export default function UsuariosAdmin() {
           </div>
         </div>
       </div>
+
+      {/* 🔍 VISOR DE IMAGEN (LIGHTBOX) PARA EL DIRECTORIO */}
+      {viewingAvatar && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setViewingAvatar(null)}>
+          <button className="absolute top-6 right-6 text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors" onClick={() => setViewingAvatar(null)}>
+            <X size={24} />
+          </button>
+          <img 
+            src={viewingAvatar} 
+            alt="Foto en grande" 
+            className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl" 
+            onClick={(e) => e.stopPropagation()} 
+          />
+        </div>
+      )}
 
       {/* MODAL DE ELIMINACIÓN */}
       {usuarioToDelete && (
