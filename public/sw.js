@@ -1,19 +1,14 @@
-self.addEventListener('install', function(event) {
-  self.skipWaiting();
-});
-
-self.addEventListener('fetch', function(event) {
-  // Este evento es OBLIGATORIO para que Chrome detecte la PWA
-});
 self.addEventListener('push', function (event) {
   if (event.data) {
     const data = event.data.json();
     const options = {
       body: data.body,
-      icon: '/icon.png',
-      badge: '/icon.png',
-      vibrate: [100, 50, 100],
-      data: { url: data.url || '/' }
+      icon: '/icon.png', // Asegúrate de que esta imagen exista en tu carpeta public
+      badge: '/icon.png', // El icono pequeño que sale en Android
+      vibrate: [200, 100, 200],
+      data: { url: data.url || '/' },
+      tag: 'real-sacerdocio-alert', // Si llegan 2, reemplaza la anterior (no se acumulan)
+      renotify: true,
     };
     event.waitUntil(self.registration.showNotification(data.title, options));
   }

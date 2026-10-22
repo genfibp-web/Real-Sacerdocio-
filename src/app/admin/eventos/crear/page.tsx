@@ -95,27 +95,31 @@ export default function CrearEvento() {
 
       if (dbError) throw dbError;
 
-      // 🔔 NOTIFICACIÓN AUTOMÁTICA (Solo si es admin, porque el evento ya se publicó)
+      // 🔔 NOTIFICACIÓN PROFESIONAL
       if (userRole === 'admin') {
         try {
+          // Formateamos la fecha para que se vea bonita (Ej: 25 de Octubre)
+          const fechaObj = new Date(formData.fecha_inicio + 'T12:00:00');
+          const fechaFormateada = fechaObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+          
           await fetch('/api/notificaciones', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              title: "¡Nuevo Evento!",
-              body: formData.titulo,
-              url: `/eventos/${slugFinal}` // Lleva a la página del evento
+              title: "Real Sacerdocio", // Título directo y oficial
+              body: `Te invitamos a: ${formData.titulo}. El ${fechaFormateada} a las ${formData.hora}.`,
+              url: `/eventos/${slugFinal}`
             })
           });
         } catch (notifError) {
-          console.error("El evento se creó pero la notificación falló", notifError);
+          console.error("La notificación falló", notifError);
         }
       }
       
       setFeedback({ 
         type: 'success', 
         message: userRole === 'admin' 
-          ? "Evento publicado exitosamente y notificación enviada." 
+          ? "Evento publicado exitosamente." 
           : "Evento enviado a revisión."
       });
       
