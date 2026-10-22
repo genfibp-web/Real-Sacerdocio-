@@ -47,29 +47,25 @@ export default function AdminAjustes() {
 
     setUploading(true);
     try {
-      // 1. Convertir y recortar (800x800)
       const webpFile = await convertToWebPAvatar(file, 800, 0.9);
       const fileName = `avatar-${user.id}-${Date.now()}.webp`;
       
-      // 2. Subir al nuevo bucket 'perfiles'
       const { error: uploadError } = await supabase.storage
-        .from('perfiles') // <-- CAMBIADO AQUÍ
+        .from('perfiles') 
         .upload(fileName, webpFile, { contentType: 'image/webp', upsert: true });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage.from('perfiles').getPublicUrl(fileName); // <-- CAMBIADO AQUÍ
+      const { data: { publicUrl } } = supabase.storage.from('perfiles').getPublicUrl(fileName); 
 
-      // 3. Borrar la anterior del bucket 'perfiles'
       if (user.avatar_url) {
         const oldFileName = getFileNameFromUrl(user.avatar_url);
         if (oldFileName) {
-          const { error: removeError } = await supabase.storage.from('perfiles').remove([oldFileName]); // <-- CAMBIADO AQUÍ
+          const { error: removeError } = await supabase.storage.from('perfiles').remove([oldFileName]); 
           if (removeError) console.error("Error al borrar foto anterior:", removeError);
         }
       }
 
-      // 4. Guardar en la DB
       const { error: dbError } = await supabase
         .from('perfiles')
         .update({ avatar_url: publicUrl })
@@ -78,8 +74,9 @@ export default function AdminAjustes() {
       if (dbError) throw dbError;
 
       setUser({ ...user, avatar_url: publicUrl });
-      setFeedback({ type: 'success', message: "Foto actualizada (800x800px)." });
+      setFeedback({ type: 'success', message: "Foto actualizada al instante." });
       
+      // 🪄 GRITAMOS EL EVENTO PARA QUE EL HEADER SE ACTUALICE AL INSTANTE
       window.dispatchEvent(new CustomEvent('avatarUpdated', { detail: { newUrl: publicUrl } }));
 
     } catch (error: any) {
@@ -94,14 +91,12 @@ export default function AdminAjustes() {
     setUploading(true);
 
     try {
-      // 1. Borrar del bucket 'perfiles'
       const fileName = getFileNameFromUrl(user.avatar_url);
       if (fileName) {
-        const { error: removeError } = await supabase.storage.from('perfiles').remove([fileName]); // <-- CAMBIADO AQUÍ
+        const { error: removeError } = await supabase.storage.from('perfiles').remove([fileName]); 
         if (removeError) throw new Error("No se pudo borrar el archivo físico: " + removeError.message);
       }
 
-      // 2. Borrar de la DB
       const { error: dbError } = await supabase
         .from('perfiles')
         .update({ avatar_url: null })
@@ -110,8 +105,9 @@ export default function AdminAjustes() {
       if (dbError) throw dbError;
 
       setUser({ ...user, avatar_url: null });
-      setFeedback({ type: 'success', message: "Foto de perfil eliminada correctamente." });
+      setFeedback({ type: 'success', message: "Foto de perfil eliminada." });
 
+      // 🪄 GRITAMOS EL EVENTO PARA QUE EL HEADER VUELVA A LA INICIAL AL INSTANTE
       window.dispatchEvent(new CustomEvent('avatarUpdated', { detail: { newUrl: null } }));
 
     } catch (error: any) {
@@ -162,7 +158,7 @@ export default function AdminAjustes() {
               <UserCircle className="text-real-purple" size={24} />
               <div>
                 <p className="text-sm font-medium text-white">Foto de Perfil</p>
-                <p className="text-xs text-gray-500">Se recorta a 800x800px y se guarda en la carpeta 'perfiles'.</p>
+                <p className="text-xs text-gray-500">Se recorta a 800x800px y se actualiza en vivo.</p>
               </div>
             </div>
             {user?.avatar_url && (

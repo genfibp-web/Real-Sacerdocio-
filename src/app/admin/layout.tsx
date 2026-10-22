@@ -47,6 +47,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     checkUser();
   }, [pathname, router]);
 
+  // 🪄 MAGIA: ESCUCHAMOS EL EVENTO PARA ACTUALIZAR LA FOTO EN EL HEADER AL INSTANTE
+  useEffect(() => {
+    const handleAvatarUpdate = (e: any) => {
+      setUser((prev: any) => prev ? { ...prev, avatar_url: e.detail.newUrl } : null);
+    };
+    window.addEventListener('avatarUpdated', handleAvatarUpdate);
+    return () => window.removeEventListener('avatarUpdated', handleAvatarUpdate);
+  }, []);
+
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [pathname]);
@@ -69,7 +78,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Finanzas", href: "/admin/finanzas", icon: DollarSign },
     { name: "Portadas", href: "/admin/comunidades", icon: Camera },
     { name: "Notificaciones", href: "/admin/notificaciones", icon: Send },
-    // { name: "Ajustes", href: "/admin/ajustes", icon: Settings }, <-- ELIMINADO
   ];
 
   if (user?.id === SUPER_ADMIN_ID) {
@@ -135,7 +143,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <h2 className="text-base md:text-lg font-medium text-white truncate">Bienvenido, {user?.nombre}</h2>
           </div>
           
-          {/* FOTO DE PERFIL (Único acceso a Ajustes) */}
           <Link href="/admin/ajustes" className="flex items-center hover:opacity-80 transition-opacity" title="Mi Perfil">
              {user?.avatar_url ? (
                <img 
