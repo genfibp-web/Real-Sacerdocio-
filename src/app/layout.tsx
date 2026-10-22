@@ -6,6 +6,8 @@ import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import PWARegister from "@/components/PWARegister";
 import PWARecovery from "@/components/PWARecovery";
 import VisitorTracker from "@/components/VisitorTracker"; 
+import PushNotificationManager from "@/components/PushNotificationManager"; // <-- 1. IMPORTAMOS LA CAMPANITA
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -60,6 +62,10 @@ export default function RootLayout({
         <PWAInstallPrompt />
         <PWARegister /> 
         <PWARecovery /> 
+        
+        {/* 2. AQUÍ COLOCAMOS LA CAMPANITA FLOTANTE */}
+        <PushNotificationManager /> 
+        
         {children}
       </body>
     </html>
