@@ -2,54 +2,53 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { Database, HardDrive, Users, Activity, ShieldCheck, Loader2, AlertTriangle, CheckCircle, BarChart3 } from "lucide-react";
+import { Database, HardDrive, Users, Activity, ShieldCheck, Loader2, AlertTriangle, BarChart3 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function AdminRecursos() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false); // Para la animación de la luz
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [user, setUser] = useState<any>(null);
+  
   const [metrics, setMetrics] = useState({
     db: { bytes: 0, pretty: "0 MB" },
     storage: { bytes: 0, pretty: "0 MB" },
-    realtime: 0, // Conexiones concurrentes (estimado)
+    realtime: 0,
     profiles: 0,
     visitas: 0,
   });
 
   const SUPER_ADMIN_ID = "520245ef-6197-4247-8a7d-07a4772be4fc";
   
-  // Límites del Plan Gratuito de Supabase
   const LIMITS = {
-    db: 500 * 1024 * 1024, // 500 MB en bytes
-    storage: 1 * 1024 * 1024 * 1024, // 1 GB en bytes
-    realtime: 200, // Conexiones concurrentes
+    db: 500 * 1024 * 1024,
+    storage: 1 * 1024 * 1024 * 1024,
+    realtime: 200,
   };
 
   useEffect(() => {
     const fetchData = async () => {
-      // 1. Verificación de seguridad
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session || session.user.id !== SUPER_ADMIN_ID) {
-        router.push("/admin/dashboard");
-        return;
+      // 1. Verificación de seguridad (solo la primera vez)
+      if (!user) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session || session.user.id !== SUPER_ADMIN_ID) {
+          router.push("/admin/dashboard");
+          return;
+        }
+        setUser(session.user);
       }
-      setUser(session.user);
+
+      // 2. Encendemos la luz de "Actualizando..."
+      setIsRefreshing(true);
 
       try {
-        // 2. Obtener tamaño de la Base de Datos
-        const { data: dbData, error: dbError } = await supabase.rpc('get_db_size');
-        if (dbError) throw dbError;
-        
-        // 3. Obtener tamaño del Storage
-        const { data: storageData, error: storageError } = await supabase.rpc('get_storage_size');
-        if (storageError) throw storageError;
-
-        // 4. Obtener conteo de usuarios y visitas (opcional, para más contexto)
+        const { data: dbData } = await supabase.rpc('get_db_size');
+        const { data: storageData } = await supabase.rpc('get_storage_size');
         const { count: profilesCount } = await supabase.from('perfiles').select('*', { count: 'exact', head: true });
         const { count: visitasCount } = await supabase.from('visitas').select('*', { count: 'exact', head: true });
 
-        // 5. (Estimado) Conexiones Realtime - Podemos usar un canal de prueba
         const testChannel = supabase.channel('resource-test');
         testChannel.subscribe((status) => {
           if (status === 'SUBSCRIBED') {
@@ -62,20 +61,31 @@ export default function AdminRecursos() {
         setMetrics({
           db: { bytes: Number(dbData?.[0]?.size_bytes || 0), pretty: dbData?.[0]?.size_pretty || "0 MB" },
           storage: { bytes: Number(storageData?.[0]?.size_bytes || 0), pretty: storageData?.[0]?.size_pretty || "0 MB" },
-          realtime: 0, // Se actualizará con el canal
+          realtime: 0,
           profiles: profilesCount || 0,
           visitas: visitasCount || 0,
         });
 
+        // Guardamos la hora exacta de la última actualización
+        setLastUpdated(new Date());
+
       } catch (error) {
         console.error("Error cargando métricas:", error);
       } finally {
+        // Apagamos la luz de "Actualizando..."
+        setIsRefreshing(false);
         setLoading(false);
       }
     };
 
+    // Carga inicial
     fetchData();
-  }, [router]);
+
+    // 🔄 MAGIA: Actualizamos cada 10 segundos automáticamente
+    const interval = setInterval(fetchData, 10000); 
+
+    return () => clearInterval(interval);
+  }, [router, user]);
 
   const calculatePercentage = (current: number, max: number) => {
     return Math.min(100, (current / max) * 100);
@@ -92,14 +102,36 @@ export default function AdminRecursos() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 relative">
       
-      {/* HEADER */}
-      <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-        <div className="p-3 bg-real-purple/20 rounded-xl text-real-purple">
-          <BarChart3 size={28} />
+      {/* HEADER CON LUZ PARPADEANTE */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-real-purple/20 rounded-xl text-real-purple">
+            <BarChart3 size={28} />
+          </div>
+          <div>
+            <h1 className="font-serif text-3xl font-bold text-white">Centro de Control</h1>
+            <p className="text-gray-400 text-sm">Monitoreo de recursos y estado de la plataforma (Solo Super Admin)</p>
+          </div>
         </div>
-        <div>
-          <h1 className="font-serif text-3xl font-bold text-white">Centro de Control</h1>
-          <p className="text-gray-400 text-sm">Monitoreo de recursos y estado de la plataforma (Solo Super Admin)</p>
+
+        {/* INDICADOR EN VIVO */}
+        <div className="flex items-center gap-3 bg-real-dark border border-white/10 px-4 py-2 rounded-xl">
+          <div className="relative flex h-3 w-3">
+            {/* El halo que hace "ping" */}
+            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isRefreshing ? 'bg-yellow-400' : 'bg-green-400'}`}></span>
+            {/* El punto central */}
+            <span className={`relative inline-flex rounded-full h-3 w-3 ${isRefreshing ? 'bg-yellow-500' : 'bg-green-500'}`}></span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-white leading-none">
+              {isRefreshing ? "Actualizando..." : "En Vivo"}
+            </span>
+            {lastUpdated && (
+              <span className="text-[10px] text-gray-500 mt-1">
+                Última: {lastUpdated.toLocaleTimeString()}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -118,7 +150,7 @@ export default function AdminRecursos() {
           </div>
           <div className="w-full bg-black/50 rounded-full h-2.5 mt-2 overflow-hidden">
             <div 
-              className={`h-2.5 rounded-full ${getProgressColor(calculatePercentage(metrics.db.bytes, LIMITS.db))}`}
+              className={`h-2.5 rounded-full transition-all duration-1000 ${getProgressColor(calculatePercentage(metrics.db.bytes, LIMITS.db))}`}
               style={{ width: `${calculatePercentage(metrics.db.bytes, LIMITS.db)}%` }}
             ></div>
           </div>
@@ -139,7 +171,7 @@ export default function AdminRecursos() {
           </div>
           <div className="w-full bg-black/50 rounded-full h-2.5 mt-2 overflow-hidden">
             <div 
-              className={`h-2.5 rounded-full ${getProgressColor(calculatePercentage(metrics.storage.bytes, LIMITS.storage))}`}
+              className={`h-2.5 rounded-full transition-all duration-1000 ${getProgressColor(calculatePercentage(metrics.storage.bytes, LIMITS.storage))}`}
               style={{ width: `${calculatePercentage(metrics.storage.bytes, LIMITS.storage)}%` }}
             ></div>
           </div>
@@ -160,7 +192,7 @@ export default function AdminRecursos() {
           </div>
           <div className="w-full bg-black/50 rounded-full h-2.5 mt-2 overflow-hidden">
             <div 
-              className={`h-2.5 rounded-full ${getProgressColor((metrics.realtime / LIMITS.realtime) * 100)}`}
+              className={`h-2.5 rounded-full transition-all duration-1000 ${getProgressColor((metrics.realtime / LIMITS.realtime) * 100)}`}
               style={{ width: `${(metrics.realtime / LIMITS.realtime) * 100}%` }}
             ></div>
           </div>
