@@ -74,14 +74,15 @@ export default function Footer() {
       {/* Franja inferior: Copyright y Botones */}
       <div className="max-w-7xl mx-auto px-5 mt-6 md:mt-16 pt-4 md:pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4">
         
-        <p className="text-gray-600 text-[9px] md:text-sm order-2 md:order-1 text-center md:text-left">
-          © 2026 Real Sacerdocio. Todos los derechos reservados.
+        {/* Copyright y Desarrollador */}
+        <p className="text-gray-600 text-[9px] md:text-sm order-2 md:order-1 text-center md:text-left flex flex-col gap-1">
+          <span>© 2026 Real Sacerdocio. Todos los derechos reservados.</span>
+          <span className="text-gray-500">Desarrollado por Genfi Bencosme.</span>
         </p>
         
         {/* Contenedor de los Botones */}
         <div className="flex flex-wrap justify-center items-center gap-2 md:gap-3 order-1 md:order-2">
           
-          {/* 👇 NUEVO BOTÓN DE REGISTRO 👇 */}
           <Link 
             href="/registro" 
             className="inline-flex items-center gap-1 bg-real-purple hover:bg-real-blue text-white px-3 py-1 md:px-5 md:py-2.5 rounded-full border border-real-purple/50 shadow-[0_0_15px_rgba(76,29,149,0.3)] transition-all text-[10px] md:text-xs font-bold transform hover:scale-105"
