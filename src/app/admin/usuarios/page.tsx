@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { UserPlus, Loader2, Shield, User, Trash2, CheckCircle, AlertTriangle, X } from "lucide-react";
+import { UserPlus, Loader2, Shield, User, Trash2, CheckCircle, AlertTriangle, X, Key } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -11,9 +11,6 @@ export default function UsuariosAdmin() {
   const [loading, setLoading] = useState(false);
   const [usuarios, setUsuarios] = useState<any[]>([]);
   
-  // Estado para el visor de imágenes
-  const [viewingAvatar, setViewingAvatar] = useState<string | null>(null);
-
   const [formData, setFormData] = useState({
     nombre: "",
     email: "",
@@ -24,6 +21,10 @@ export default function UsuariosAdmin() {
 
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [usuarioToDelete, setUsuarioToDelete] = useState<any | null>(null); 
+  
+  const [usuarioToChangePass, setUsuarioToChangePass] = useState<any | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
 
   const SUPER_ADMIN_ID = "520245ef-6197-4247-8a7d-07a4772be4fc";
 
@@ -96,6 +97,35 @@ export default function UsuariosAdmin() {
     setUsuarioToDelete(null); 
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!usuarioToChangePass) return;
+    setSavingPassword(true);
+
+    try {
+      const res = await fetch('/api/usuarios', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: usuarioToChangePass.id,
+          newPassword: newPassword,
+          requesterId: SUPER_ADMIN_ID
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      setFeedback({ type: 'success', message: "Contraseña actualizada correctamente." });
+      setUsuarioToChangePass(null);
+      setNewPassword("");
+    } catch (error: any) {
+      setFeedback({ type: 'error', message: error.message });
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 relative">
       <div>
@@ -108,7 +138,7 @@ export default function UsuariosAdmin() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* FORMULARIO */}
+        {/* FORMULARIO DE CREACIÓN */}
         <div className="lg:col-span-1">
           <form onSubmit={handleSubmit} className="bg-real-dark border border-white/10 rounded-2xl p-6 space-y-4 sticky top-24">
             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
@@ -165,26 +195,23 @@ export default function UsuariosAdmin() {
             
             <div className="divide-y divide-white/5">
               {usuarios.map((user) => (
-                <div key={user.id} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
+                <div key={user.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-white/5 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className="relative">
-                      {/* 👇 AVATAR CLICABLE (Con fallback rápido) 👇 */}
                       {user.avatar_url ? (
                         <img 
                           src={user.avatar_url} 
                           alt={user.nombre} 
-                          onClick={() => setViewingAvatar(user.avatar_url)}
-                          className="w-10 h-10 rounded-full object-cover border border-white/20 shadow-sm cursor-pointer hover:scale-110 transition-transform" 
-                          loading="lazy"
+                          className="w-12 h-12 rounded-full object-cover border border-white/20 shadow-sm" 
                         />
                       ) : (
-                        <div className="w-10 h-10 bg-real-purple/20 text-real-purple rounded-full flex items-center justify-center font-bold">
+                        <div className="w-12 h-12 bg-real-purple/20 text-real-purple rounded-full flex items-center justify-center font-bold text-lg">
                           {user.nombre.charAt(0).toUpperCase()}
                         </div>
                       )}
                     </div>
                     <div>
-                      <p className={`font-medium ${user.id === SUPER_ADMIN_ID ? 'text-real-gold' : 'text-white'}`}>
+                      <p className={`font-medium text-lg ${user.id === SUPER_ADMIN_ID ? 'text-real-gold' : 'text-white'}`}>
                         {user.nombre}
                       </p>
                       <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -204,15 +231,32 @@ export default function UsuariosAdmin() {
                     </div>
                   </div>
                   
-                  {user.id !== SUPER_ADMIN_ID ? (
-                    <button onClick={() => setUsuarioToDelete(user)} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
-                      <Trash2 size={16} />
+                  {/* BOTONES DE ACCIÓN - SIEMPRE VISIBLES */}
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setUsuarioToChangePass(user)} 
+                      className="flex items-center gap-2 px-3 py-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors border border-blue-500/20" 
+                      title="Cambiar Contraseña"
+                    >
+                      <Key size={16} />
+                      <span className="text-xs font-medium">Contraseña</span>
                     </button>
-                  ) : (
-                    <span className="flex items-center gap-1 text-[10px] font-bold text-real-gold bg-real-gold/10 px-2 py-1 rounded-md border border-real-gold/20">
-                      <Shield size={12} /> SUPER ADMIN
-                    </span>
-                  )}
+
+                    {user.id !== SUPER_ADMIN_ID ? (
+                      <button 
+                        onClick={() => setUsuarioToDelete(user)} 
+                        className="flex items-center gap-2 px-3 py-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors border border-red-500/20" 
+                        title="Eliminar Usuario"
+                      >
+                        <Trash2 size={16} />
+                        <span className="text-xs font-medium">Eliminar</span>
+                      </button>
+                    ) : (
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-real-gold bg-real-gold/10 px-3 py-2 rounded-lg border border-real-gold/20">
+                        <Shield size={12} /> SUPER ADMIN
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -220,18 +264,42 @@ export default function UsuariosAdmin() {
         </div>
       </div>
 
-      {/* 🔍 VISOR DE IMAGEN (LIGHTBOX) PARA EL DIRECTORIO */}
-      {viewingAvatar && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setViewingAvatar(null)}>
-          <button className="absolute top-6 right-6 text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors" onClick={() => setViewingAvatar(null)}>
-            <X size={24} />
-          </button>
-          <img 
-            src={viewingAvatar} 
-            alt="Foto en grande" 
-            className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl" 
-            onClick={(e) => e.stopPropagation()} 
-          />
+      {/* 🔑 MODAL DE CAMBIO DE CONTRASEÑA */}
+      {usuarioToChangePass && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" onClick={() => setUsuarioToChangePass(null)}></div>
+          <div className="relative bg-real-dark border border-white/10 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl">
+            <button onClick={() => setUsuarioToChangePass(null)} className="absolute top-4 right-4 text-gray-500 hover:text-white"><X size={20} /></button>
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-4"><Key size={32} className="text-blue-400" /></div>
+              <h3 className="text-2xl font-bold text-white mb-2">Cambiar Contraseña</h3>
+              <p className="text-gray-400 text-sm">
+                Asigna una nueva contraseña para <strong className="text-white">{usuarioToChangePass.nombre}</strong>.
+              </p>
+            </div>
+            
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Nueva Contraseña (Mínimo 6 caracteres)</label>
+                <input 
+                  type="text" 
+                  required 
+                  minLength={6}
+                  value={newPassword} 
+                  onChange={(e) => setNewPassword(e.target.value)} 
+                  className="w-full bg-black/50 border border-white/10 text-white px-4 py-3 rounded-xl focus:border-blue-500 outline-none" 
+                  placeholder="Ej: Temporal2026" 
+                />
+              </div>
+              
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setUsuarioToChangePass(null)} className="flex-1 bg-white/5 hover:bg-white/10 text-white py-3 rounded-xl font-medium transition-colors">Cancelar</button>
+                <button type="submit" disabled={savingPassword} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-colors flex justify-center items-center gap-2">
+                  {savingPassword ? <Loader2 size={18} className="animate-spin" /> : "Guardar"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
