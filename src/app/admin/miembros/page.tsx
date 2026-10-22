@@ -227,7 +227,7 @@ export default function MiembrosAdmin() {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="font-serif text-3xl font-bold text-white mb-2">Censo de Miembros</h1>
+          <h1 className="font-serif text-3xl font-bold text-white mb-2">Miembros</h1>
           <p className="text-gray-400">Administra el directorio de hermanos de la iglesia.</p>
         </div>
         <button 
