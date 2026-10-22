@@ -34,6 +34,7 @@ export default function AdminAjustes() {
     fetchUser();
   }, [router]);
 
+  // Extrae el nombre del archivo limpiando cualquier parámetro extra en la URL
   const getFileNameFromUrl = (url: string) => {
     if (!url) return null;
     const parts = url.split('/');
@@ -47,9 +48,11 @@ export default function AdminAjustes() {
 
     setUploading(true);
     try {
+      // 1. Convertir y recortar (800x800)
       const webpFile = await convertToWebPAvatar(file, 800, 0.9);
       const fileName = `avatar-${user.id}-${Date.now()}.webp`;
       
+      // 2. Subir al bucket 'perfiles'
       const { error: uploadError } = await supabase.storage
         .from('perfiles') 
         .upload(fileName, webpFile, { contentType: 'image/webp', upsert: true });
@@ -58,14 +61,18 @@ export default function AdminAjustes() {
 
       const { data: { publicUrl } } = supabase.storage.from('perfiles').getPublicUrl(fileName); 
 
+      // 3. 🧹 BORRAR LA FOTO ANTERIOR DE AMBOS BUCKETS (perfiles y portadas)
       if (user.avatar_url) {
         const oldFileName = getFileNameFromUrl(user.avatar_url);
         if (oldFileName) {
-          const { error: removeError } = await supabase.storage.from('perfiles').remove([oldFileName]); 
-          if (removeError) console.error("Error al borrar foto anterior:", removeError);
+          // Intentamos borrar en 'perfiles'
+          await supabase.storage.from('perfiles').remove([oldFileName]); 
+          // Intentamos borrar en 'portadas' (por si era de las viejas)
+          await supabase.storage.from('portadas').remove([oldFileName]); 
         }
       }
 
+      // 4. Guardar la URL limpia en la Base de Datos
       const { error: dbError } = await supabase
         .from('perfiles')
         .update({ avatar_url: publicUrl })
@@ -73,10 +80,14 @@ export default function AdminAjustes() {
 
       if (dbError) throw dbError;
 
-      setUser({ ...user, avatar_url: publicUrl });
+      // 5. 🪄 ROMPEMOS LA CACHÉ DEL NAVEGADOR
+      // Añadimos ?v=timestamp solo para la vista en pantalla
+      const urlSinCache = `${publicUrl}?v=${Date.now()}`;
+
+      setUser({ ...user, avatar_url: urlSinCache });
       setFeedback({ type: 'success', message: "Foto actualizada correctamente." });
       
-      window.dispatchEvent(new CustomEvent('avatarUpdated', { detail: { newUrl: publicUrl } }));
+      window.dispatchEvent(new CustomEvent('avatarUpdated', { detail: { newUrl: urlSinCache } }));
 
     } catch (error: any) {
       setFeedback({ type: 'error', message: "Error al subir la foto: " + error.message });
@@ -92,10 +103,12 @@ export default function AdminAjustes() {
     try {
       const fileName = getFileNameFromUrl(user.avatar_url);
       if (fileName) {
-        const { error: removeError } = await supabase.storage.from('perfiles').remove([fileName]); 
-        if (removeError) throw new Error("No se pudo borrar el archivo físico: " + removeError.message);
+        // Borrar de ambos buckets
+        await supabase.storage.from('perfiles').remove([fileName]); 
+        await supabase.storage.from('portadas').remove([fileName]); 
       }
 
+      // Quitar de la Base de Datos
       const { error: dbError } = await supabase
         .from('perfiles')
         .update({ avatar_url: null })
@@ -126,7 +139,6 @@ export default function AdminAjustes() {
 
       <div className="bg-real-dark border border-white/10 rounded-3xl p-8 flex flex-col items-center relative">
         
-        {/* 🗑️ BOTÓN DE ELIMINAR (Arriba a la derecha, discreto) */}
         {user?.avatar_url && (
           <button 
             onClick={handleDeleteAvatar} 
@@ -138,7 +150,6 @@ export default function AdminAjustes() {
           </button>
         )}
 
-        {/* FOTO DE PERFIL */}
         <div className="relative group mb-6 mt-4">
           {user?.avatar_url ? (
             <img 
@@ -165,7 +176,6 @@ export default function AdminAjustes() {
 
       </div>
 
-      {/* VISOR DE IMAGEN */}
       {viewImage && user?.avatar_url && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setViewImage(false)}>
           <button className="absolute top-6 right-6 text-white bg-white/10 hover:bg-white/20 p-2 rounded-full" onClick={() => setViewImage(false)}><X size={24} /></button>
@@ -173,7 +183,6 @@ export default function AdminAjustes() {
         </div>
       )}
 
-      {/* MODAL DE FEEDBACK */}
       {feedback && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" onClick={() => setFeedback(null)}></div>
