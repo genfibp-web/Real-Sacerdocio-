@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Bell, BellOff } from "lucide-react";
+import { usePathname } from "next/navigation"; // <-- Importamos usePathname
 
 export default function PushNotificationManager() {
+  const pathname = usePathname();
   const [isSubscribed, setIsSubscribed] = useState(false);
 
   useEffect(() => {
@@ -49,6 +51,11 @@ export default function PushNotificationManager() {
     for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
     return outputArray;
   };
+
+  // 🛡️ SI ESTAMOS EN EL PANEL DE ADMIN, NO MOSTRAMOS NADA
+  if (pathname.startsWith('/admin')) {
+    return null;
+  }
 
   return (
     <button

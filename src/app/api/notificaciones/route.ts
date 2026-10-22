@@ -16,18 +16,34 @@ export async function POST(req: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  const { data: subscriptions } = await supabaseAdmin.from('push_subscriptions').select('*');
-  if (!subscriptions) return NextResponse.json({ error: 'No hay dispositivos' }, { status: 400 });
+  // 1. Traemos TODAS las suscripciones de la base de datos
+  const { data: subscriptions, error } = await supabaseAdmin.from('push_subscriptions').select('*');
+  
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!subscriptions || subscriptions.length === 0) return NextResponse.json({ error: 'No hay dispositivos registrados' }, { status: 400 });
 
   const payload = JSON.stringify({ title, body, url });
+  let enviados = 0;
+  let fallidos = 0;
 
-  const sendPromises = subscriptions.map((sub) =>
-    webpush.sendNotification({
-      endpoint: sub.endpoint,
-      keys: { p256dh: sub.p256dh, auth: sub.auth }
-    }, payload).catch(err => console.error("Error enviando a:", sub.endpoint, err))
+  // 2. Enviamos a todos en paralelo
+  await Promise.all(
+    subscriptions.map(async (sub) => {
+      try {
+        await webpush.sendNotification({
+          endpoint: sub.endpoint,
+          keys: { p256dh: sub.p256dh, auth: sub.auth }
+        }, payload);
+        enviados++;
+      } catch (err: any) {
+        fallidos++;
+        // Si el dispositivo ya no existe (410 Gone), lo borramos de la base de datos
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          await supabaseAdmin.from('push_subscriptions').delete().eq('id', sub.id);
+        }
+      }
+    })
   );
 
-  await Promise.all(sendPromises);
-  return NextResponse.json({ success: true, count: subscriptions.length });
+  return NextResponse.json({ success: true, enviados, fallidos, total: subscriptions.length });
 }

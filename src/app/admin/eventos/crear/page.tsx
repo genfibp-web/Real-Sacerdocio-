@@ -77,10 +77,11 @@ export default function CrearEvento() {
       }
 
       const slug = formData.titulo.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+      const slugFinal = slug + "-" + Math.floor(Math.random() * 1000);
 
       const { error: dbError } = await supabase.from('eventos').insert([{
         titulo: formData.titulo,
-        slug: slug + "-" + Math.floor(Math.random() * 1000),
+        slug: slugFinal,
         descripcion: formData.descripcion,
         fecha_inicio: formData.fecha_inicio,
         fecha_fin: formData.fecha_fin || null,
@@ -93,8 +94,31 @@ export default function CrearEvento() {
       }]);
 
       if (dbError) throw dbError;
+
+      // 🔔 NOTIFICACIÓN AUTOMÁTICA (Solo si es admin, porque el evento ya se publicó)
+      if (userRole === 'admin') {
+        try {
+          await fetch('/api/notificaciones', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: "¡Nuevo Evento!",
+              body: formData.titulo,
+              url: `/eventos/${slugFinal}` // Lleva a la página del evento
+            })
+          });
+        } catch (notifError) {
+          console.error("El evento se creó pero la notificación falló", notifError);
+        }
+      }
       
-      setFeedback({ type: 'success', message: userRole === 'admin' ? "Evento publicado exitosamente." : "Evento enviado a revisión." });
+      setFeedback({ 
+        type: 'success', 
+        message: userRole === 'admin' 
+          ? "Evento publicado exitosamente y notificación enviada." 
+          : "Evento enviado a revisión."
+      });
+      
       setTimeout(() => { window.location.href = "/admin/eventos"; }, 2000);
 
     } catch (error: any) {
@@ -112,7 +136,7 @@ export default function CrearEvento() {
       <div>
         <h1 className="font-serif text-3xl font-bold text-white mb-2">Crear Nuevo Evento</h1>
         <p className="text-gray-400">
-          {userRole === 'admin' ? "Como administrador, tu evento se publicará inmediatamente." : "Tu evento pasará a revisión antes de publicarse."}
+          {userRole === 'admin' ? "Como administrador, tu evento se publicará inmediatamente y enviará una notificación." : "Tu evento pasará a revisión antes de publicarse."}
         </p>
       </div>
 
