@@ -36,7 +36,8 @@ export async function GET(req: Request) {
       "mensaje": "Una reflexión profunda y alentadora de 2 párrafos aplicable a la vida diaria."
     }`;
 
-    const respuestaIA = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+    // 🛠️ MODELO ACTUALIZADO A GEMINI 2.5-FLASH
+    const respuestaIA = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -45,7 +46,7 @@ export async function GET(req: Request) {
       })
     });
 
-    // 🛡️ ESCUDO: Verificamos si Google respondió con error (clave inválida, sin cuota, etc.)
+    // 🛡️ ESCUDO: Verificamos si Google respondió con error
     if (!respuestaIA.ok) {
       const errorData = await respuestaIA.json();
       throw new Error(`Error de Google API: ${errorData.error?.message || 'Error desconocido'}`);
