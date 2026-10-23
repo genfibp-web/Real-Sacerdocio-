@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
+import DailyVerseCard from "@/components/DailyVerseCard"; // <-- 1. IMPORTAMOS EL COMPONENTE
 import About from "@/components/About";
 import FeaturedEventSlider from "@/components/FeaturedEventSlider";
 import CommunityGrid from "@/components/CommunityGrid";
@@ -14,6 +15,10 @@ export default function Home() {
     <main className="min-h-screen flex flex-col overflow-hidden bg-real-black">
       <Navbar />
       <Hero />
+      
+      {/* 2. COLOCAMOS LA TARJETA DEL VERSÍCULO AQUÍ */}
+      <DailyVerseCard /> 
+
       <About />
       
       {/* SECCIÓN DE EVENTO DESTACADO */}
