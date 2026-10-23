@@ -25,7 +25,7 @@ export default function DailyVerseCard() {
   if (!versiculo) return null;
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-6 -mt-10 relative z-20">
+    <div className="w-full max-w-4xl mx-auto px-6 mt-8 md:mt-12 relative z-20">
       <div className="bg-real-dark/90 backdrop-blur-md border border-real-gold/30 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 shadow-2xl">
         
         <div className="p-4 bg-real-gold/10 rounded-2xl text-real-gold shrink-0">
