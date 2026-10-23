@@ -1,15 +1,16 @@
-// Versión: 2.0 - Forzar actualización
+// Versión: 2.1 - Notificaciones con Sonido y Vibración
 self.addEventListener('push', function (event) {
   if (event.data) {
     const data = event.data.json();
     const options = {
       body: data.body,
-      icon: '/icon.png', // Asegúrate de que esta imagen exista en tu carpeta public
-      badge: '/icon.png', // El icono pequeño que sale en Android
-      vibrate: [200, 100, 200],
+      icon: '/icon.png', // Tu logo principal
+      badge: '/icon.png', // El icono pequeño en la barra de estado (Android)
+      vibrate: [200, 100, 200, 100, 200], // Patrón de vibración más notorio
+      silent: false, // ⚠️ CRUCIAL: Obliga al sistema a emitir el sonido por defecto
       data: { url: data.url || '/' },
-      tag: 'real-sacerdocio-alert', // Si llegan 2, reemplaza la anterior (no se acumulan)
-      renotify: true,
+      tag: 'real-sacerdocio-alert', // Reemplaza la notificación anterior si llega otra
+      renotify: true, // Hace vibrar/sonar de nuevo si se usa el mismo tag
     };
     event.waitUntil(self.registration.showNotification(data.title, options));
   }
