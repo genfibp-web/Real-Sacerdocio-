@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { BadgeCheck, FileText, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { BadgeCheck, FileText, ChevronLeft, ChevronRight, X, Share2 } from "lucide-react"; // <-- Agregado Share2
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
@@ -55,6 +55,31 @@ export default function PublicationCard({ noticia }: { noticia: any }) {
     }
   };
 
+  // 🆕 FUNCIÓN PARA COMPARTIR
+  const handleShare = async () => {
+    // Tomamos los primeros 100 caracteres de la descripción para no hacerlo tan largo
+    const descripcionCorta = noticia.contenido.substring(0, 100) + (noticia.contenido.length > 100 ? "..." : "");
+    
+    const shareData = {
+      title: `📢 ${noticia.titulo}`,
+      text: `${noticia.titulo}\n\n"${descripcionCorta}"\n\nLee la publicación completa en Real Sacerdocio:`,
+      url: "https://real-sacerdocio.vercel.app/feed" // URL de tu web
+    };
+
+    try {
+      if (navigator.share) {
+        // Abre el menú nativo del teléfono (WhatsApp, Instagram, etc.)
+        await navigator.share(shareData);
+      } else {
+        // Plan B: Si el navegador no soporta compartir (ej. PC), copia al portapapeles
+        await navigator.clipboard.writeText(`${shareData.title}\n\n${shareData.text}\n\n${shareData.url}`);
+        alert("¡Texto copiado! Ya puedes pegarlo en WhatsApp o donde quieras.");
+      }
+    } catch (error) {
+      console.error("Error al compartir:", error);
+    }
+  };
+
   return (
     <>
       <article className="bg-real-dark border border-white/10 rounded-2xl overflow-hidden mb-4 shadow-md hover:border-white/20 transition-all">
@@ -84,16 +109,27 @@ export default function PublicationCard({ noticia }: { noticia: any }) {
         <div className="px-3 md:px-4 pb-3">
           <h2 className="font-serif text-base md:text-lg font-bold text-white mb-2 leading-snug">{noticia.titulo}</h2>
           <p className={`text-gray-300 text-sm leading-relaxed whitespace-pre-line ${isExpanded ? '' : 'line-clamp-3'}`}>{noticia.contenido}</p>
-          {noticia.contenido.length > 150 && (
-            <button onClick={() => setIsExpanded(!isExpanded)} className="text-real-purple font-semibold text-sm mt-2 hover:text-real-blue transition-colors">
-              {isExpanded ? "Ver menos" : "Ver más..."}
+          
+          <div className="flex items-center justify-between mt-2">
+            {noticia.contenido.length > 150 ? (
+              <button onClick={() => setIsExpanded(!isExpanded)} className="text-real-purple font-semibold text-sm hover:text-real-blue transition-colors">
+                {isExpanded ? "Ver menos" : "Ver más..."}
+              </button>
+            ) : <div></div>}
+
+            {/* 🆕 BOTÓN DE COMPARTIR */}
+            <button 
+              onClick={handleShare}
+              className="flex items-center gap-1.5 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors text-xs font-medium"
+            >
+              <Share2 size={14} /> Compartir
             </button>
-          )}
+          </div>
         </div>
 
-        {/* 🪄 CARRUSEL DE IMÁGENES (Sin márgenes laterales) */}
+        {/* 🪄 CARRUSEL DE IMÁGENES */}
         {imagenes.length > 0 && (
-          <div className="relative w-full group">
+          <div className="relative w-full group mt-2">
             
             <div 
               ref={carouselRef}
@@ -102,7 +138,6 @@ export default function PublicationCard({ noticia }: { noticia: any }) {
             >
               {imagenes.map((img: string, index: number) => (
                 <div key={index} className="w-full flex-shrink-0 snap-center relative">
-                  {/* 🛠️ FIX: w-full h-auto para que llene el ancho sin cortarse */}
                   <img 
                     src={img} 
                     alt={`Imagen ${index + 1}`} 
