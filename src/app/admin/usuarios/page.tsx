@@ -6,7 +6,7 @@ import { UserPlus, Loader2, Shield, User, Trash2, CheckCircle, AlertTriangle, X,
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-// Lista de todos los módulos disponibles en el sistema
+// Lista de todos los módulos disponibles en el sistema para los permisos
 const MODULOS = [
   { id: "dashboard", label: "Dashboard" },
   { id: "eventos", label: "Eventos" },
@@ -26,6 +26,7 @@ export default function UsuariosAdmin() {
   const router = useRouter(); 
   const [loading, setLoading] = useState(false);
   const [usuarios, setUsuarios] = useState<any[]>([]);
+  const [comunidadesList, setComunidadesList] = useState<any[]>([]); // <-- NUEVO ESTADO
   const [showPasswords, setShowPasswords] = useState<{[key: string]: boolean}>({});
 
   // Estados para CREAR usuario
@@ -34,7 +35,7 @@ export default function UsuariosAdmin() {
     email: "",
     password: "",
     rol: "lider",
-    comunidad_slug: "jovenes",
+    comunidad_slug: "general", // Por defecto general
   });
   const [newPermisos, setNewPermisos] = useState<string[]>(["dashboard", "eventos", "publicaciones"]);
 
@@ -44,7 +45,7 @@ export default function UsuariosAdmin() {
   // Estados para EDITAR usuario
   const [usuarioToEdit, setUsuarioToEdit] = useState<any | null>(null);
   const [editRol, setEditRol] = useState("lider");
-  const [editComunidad, setEditComunidad] = useState("jovenes");
+  const [editComunidad, setEditComunidad] = useState("general");
   const [editPermisos, setEditPermisos] = useState<string[]>([]);
 
   // Estados para CONTRASEÑA
@@ -58,15 +59,25 @@ export default function UsuariosAdmin() {
     if (data) setUsuarios(data);
   };
 
+  // 🆕 Cargar comunidades dinámicamente
+  const fetchComunidades = async () => {
+    const { data } = await supabase.from('comunidades').select('slug, nombre').order('nombre');
+    if (data) setComunidadesList(data);
+  };
+
   useEffect(() => {
     const checkAdminAndConnect = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      
       if (!session || session.user.id !== SUPER_ADMIN_ID) {
         router.push("/admin"); 
         return;
       }
+      
       fetchUsuarios();
+      fetchComunidades(); // <-- Llamamos a la nueva función
     };
+
     checkAdminAndConnect();
   }, [router]);
 
@@ -103,7 +114,7 @@ export default function UsuariosAdmin() {
       if (!res.ok) throw new Error(data.error);
 
       setFeedback({ type: 'success', message: "Usuario creado exitosamente." });
-      setFormData({ nombre: "", email: "", password: "", rol: "lider", comunidad_slug: "jovenes" });
+      setFormData({ nombre: "", email: "", password: "", rol: "lider", comunidad_slug: "general" });
       setNewPermisos(["dashboard", "eventos", "publicaciones"]);
       fetchUsuarios();
     } catch (error: any) {
@@ -147,7 +158,7 @@ export default function UsuariosAdmin() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      setFeedback({ type: 'success', message: "Permisos actualizados correctamente." });
+      setFeedback({ type: 'success', message: "Usuario actualizado correctamente." });
       setUsuarioToEdit(null);
       fetchUsuarios();
     } catch (error: any) {
@@ -187,7 +198,7 @@ export default function UsuariosAdmin() {
       <div>
         <Link href="/admin/dashboard" className="text-sm text-gray-400 hover:text-white mb-2 inline-block">← Volver al Dashboard</Link>
         <h1 className="font-serif text-3xl font-bold text-white mb-2">Gestión de Usuarios</h1>
-        <p className="text-gray-400">Crea usuarios y configura exactamente qué pueden ver en el panel.</p>
+        <p className="text-gray-400">Crea usuarios y configurar exactamente qué pueden ver en el panel.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -210,14 +221,14 @@ export default function UsuariosAdmin() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs text-gray-400">Contraseña</label>
+              <label className="text-xs text-gray-400">Contraseña Temporal</label>
               <input type="text" required value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="w-full bg-black/50 border border-white/10 text-white px-3 py-2 rounded-lg text-sm" placeholder="Mínimo 6 caracteres" />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs text-gray-400">Rol Base (Solo visual)</label>
+              <label className="text-xs text-gray-400">Rol Base</label>
               <select value={formData.rol} onChange={(e) => setFormData({...formData, rol: e.target.value})} className="w-full bg-black/50 border border-white/10 text-white px-3 py-2 rounded-lg text-sm">
-                <option value="lider">Líder de Comunidad</option>
+                <option value="lider">Líder de Ministerio / Comunidad</option>
                 <option value="admin">Administrador General</option>
               </select>
             </div>
@@ -225,11 +236,11 @@ export default function UsuariosAdmin() {
             {formData.rol === 'lider' && (
               <div className="space-y-1">
                 <label className="text-xs text-gray-400">Comunidad Asignada</label>
+                {/* 🆕 SELECT DINÁMICO */}
                 <select value={formData.comunidad_slug} onChange={(e) => setFormData({...formData, comunidad_slug: e.target.value})} className="w-full bg-black/50 border border-white/10 text-white px-3 py-2 rounded-lg text-sm">
-                  <option value="jovenes">Jóvenes</option>
-                  <option value="caballeros">Caballeros</option>
-                  <option value="damas">Damas</option>
-                  <option value="ninos">Niños</option>
+                  {comunidadesList.map((comunidad) => (
+                    <option key={comunidad.slug} value={comunidad.slug}>{comunidad.nombre}</option>
+                  ))}
                 </select>
               </div>
             )}
@@ -281,7 +292,7 @@ export default function UsuariosAdmin() {
                       
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[10px] uppercase font-bold text-gray-400 bg-black/30 px-2 py-0.5 rounded">
-                          {user.rol}
+                          {user.rol} {user.comunidad_slug && `• ${user.comunidad_slug}`}
                         </span>
                         <span className="text-xs text-gray-500 font-mono bg-black/30 px-2 py-0.5 rounded border border-white/5">
                           Clave: {showPasswords[user.id] ? (user.password_temporal || "No asignada") : "••••••••"}
@@ -300,7 +311,7 @@ export default function UsuariosAdmin() {
                       <button onClick={() => {
                         setUsuarioToEdit(user);
                         setEditRol(user.rol);
-                        setEditComunidad(user.comunidad_slug || "jovenes");
+                        setEditComunidad(user.comunidad_slug || "general");
                         setEditPermisos(user.permisos || []);
                       }} className="flex items-center gap-2 px-3 py-2 bg-real-gold/10 text-real-gold hover:bg-real-gold/20 rounded-lg transition-colors border border-real-gold/20" title="Editar Permisos">
                         <Edit size={16} /> <span className="text-xs font-medium hidden md:inline">Editar</span>
@@ -351,12 +362,12 @@ export default function UsuariosAdmin() {
                 </div>
                 {editRol === 'lider' && (
                   <div>
-                    <label className="text-xs text-gray-400 mb-1 block">Comunidad</label>
+                    <label className="text-xs text-gray-400 mb-1 block">Comunidad / Ministerio</label>
+                    {/* 🆕 SELECT DINÁMICO EN EDICIÓN */}
                     <select value={editComunidad} onChange={(e) => setEditComunidad(e.target.value)} className="w-full bg-black/50 border border-white/10 text-white px-3 py-2 rounded-xl focus:border-real-gold outline-none">
-                      <option value="jovenes">Jóvenes</option>
-                      <option value="caballeros">Caballeros</option>
-                      <option value="damas">Damas</option>
-                      <option value="ninos">Niños</option>
+                      {comunidadesList.map((comunidad) => (
+                        <option key={comunidad.slug} value={comunidad.slug}>{comunidad.nombre}</option>
+                      ))}
                     </select>
                   </div>
                 )}

@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X, Globe, Activity, Contact, DollarSign, Camera, BarChart3, Send } from "lucide-react";
+// 👇 Agregamos Network para Ministerios
+import { LayoutDashboard, CalendarDays, Image as ImageIcon, LogOut, MessageSquare, FileText, Users, Menu, X, Globe, Activity, Contact, DollarSign, Camera, BarChart3, Send, Network } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -114,6 +115,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </Link>
             );
           })}
+
+          {/* 👇 BOTÓN EXCLUSIVO PARA EL SÚPER ADMIN 👇 */}
+          {user?.id === SUPER_ADMIN_ID && (
+            <>
+              <div className="pt-4 pb-2">
+                <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Administración</p>
+              </div>
+              <Link 
+                href="/admin/ministerios" 
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${pathname === "/admin/ministerios" ? "bg-real-gold/20 text-real-gold font-semibold" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}
+              >
+                <Network size={20} />
+                Ministerios
+              </Link>
+            </>
+          )}
         </nav>
 
         <div className="p-4 border-t border-white/5 space-y-2">

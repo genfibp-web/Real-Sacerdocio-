@@ -14,14 +14,6 @@ export default function AdminComunidades() {
   const [uploading, setUploading] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
-  const defaultComunidades = [
-    { slug: "jovenes", name: "Generación KEHUNAH" },
-    { slug: "caballeros", name: "Hombres de la Realeza" },
-    { slug: "damas", name: "Mujeres de Buena Voluntad" },
-    { slug: "ninos", name: "Niños y Adolescentes" },
-    { slug: "parejas", name: "Ministerio de Parejas" },
-  ];
-
   useEffect(() => {
     const fetchData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -38,18 +30,21 @@ export default function AdminComunidades() {
 
       setUser({ ...perfil, id: session.user.id });
 
-      // Cargar comunidades
-      const { data: dbComunidades } = await supabase.from('comunidades').select('*');
+      // 🛠️ CAMBIO AQUÍ: Traemos TODAS las comunidades directo de la base de datos
+      const { data: dbComunidades } = await supabase
+        .from('comunidades')
+        .select('*')
+        .order('nombre');
       
-      const merged = defaultComunidades.map(comp => {
-        const dbItem = dbComunidades?.find(db => db.slug === comp.slug);
-        return {
-          ...comp,
-          imagen_url: dbItem?.imagen_url || null
-        };
-      });
-      
-      setComunidades(merged);
+      if (dbComunidades) {
+        // Mapeamos los datos de la DB al formato que usaba tu código
+        const formattedComunidades = dbComunidades.map(db => ({
+          slug: db.slug,
+          name: db.nombre,
+          imagen_url: db.imagen_url || null
+        }));
+        setComunidades(formattedComunidades);
+      }
 
       // Cargar imagen de bienvenida
       const { data: configData } = await supabase
@@ -99,14 +94,14 @@ export default function AdminComunidades() {
     });
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, key: string, isMainImage = false) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, slug: string, isMainImage = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setUploading(key);
+    setUploading(slug);
     try {
       const webpBlob = await convertToWebP(file);
-      const fileName = `${key}-${Date.now()}.webp`;
+      const fileName = `${slug}-${Date.now()}.webp`;
       
       const { error: uploadError } = await supabase.storage
         .from('portadas')
@@ -131,19 +126,15 @@ export default function AdminComunidades() {
         if (dbError) throw dbError;
         setImagenBienvenida(publicUrl);
       } else {
-        // 🛠️ FIX: Buscamos el nombre y lo enviamos como 'nombre' para cumplir con la DB
-        const comunidadNombre = comunidades.find(c => c.slug === key)?.name || key;
-        
+        // Actualizamos el registro existente en la tabla comunidades
         const { error: dbError } = await supabase
           .from('comunidades')
-          .upsert({ 
-            slug: key, 
-            nombre: comunidadNombre, // <-- Enviamos el nombre
-            imagen_url: publicUrl 
-          }, { onConflict: 'slug' });
+          .update({ imagen_url: publicUrl })
+          .eq('slug', slug);
 
         if (dbError) throw dbError;
-        setComunidades(prev => prev.map(c => c.slug === key ? { ...c, imagen_url: publicUrl } : c));
+        
+        setComunidades(prev => prev.map(c => c.slug === slug ? { ...c, imagen_url: publicUrl } : c));
       }
 
       setFeedback({ type: 'success', message: "Imagen WebP actualizada correctamente." });
@@ -205,9 +196,9 @@ export default function AdminComunidades() {
         </div>
       )}
 
-      {/* SECCIÓN DE COMUNIDADES */}
+      {/* SECCIÓN DE COMUNIDADES (Ahora dinámica) */}
       <div>
-        <h2 className="font-serif text-2xl font-bold text-white mb-4">Portadas de Comunidades</h2>
+        <h2 className="font-serif text-2xl font-bold text-white mb-4">Portadas de Comunidades y Ministerios</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {comunidadesVisibles.map((comunidad) => (
             <div key={comunidad.slug} className="bg-real-dark border border-white/10 rounded-2xl overflow-hidden flex flex-col">

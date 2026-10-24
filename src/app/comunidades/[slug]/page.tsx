@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import { CalendarDays, MapPin, ArrowLeft, Megaphone, FileText } from "lucide-react";
 import { notFound } from "next/navigation";
 import CommunityFeed from "@/components/CommunityFeed"; 
+import PublicationCard from "@/components/PublicationCard"; // <-- IMPORTAMOS LA TARJETA
 
 export const dynamic = 'force-dynamic';
 
@@ -23,17 +24,9 @@ export default async function CommunityPage({ params }: { params: Promise<{ slug
   const info = comunidadesInfo[slug];
   if (!info) notFound();
 
-  // 🪄 MAGIA: Consultamos la imagen a la base de datos
-  const { data: dbComunidad } = await supabase
-    .from('comunidades')
-    .select('imagen_url')
-    .eq('slug', slug)
-    .single();
-
-  // Si hay una imagen en la base de datos, usamos esa. Si no, usamos la de respaldo (fallback)
+  const { data: dbComunidad } = await supabase.from('comunidades').select('imagen_url').eq('slug', slug).single();
   const imagenHero = dbComunidad?.imagen_url || info.fallbackImage;
 
-  // 1. EVENTOS: Trae los de la comunidad y los generales
   const { data: eventos } = await supabase
     .from("eventos")
     .select("*")
@@ -42,14 +35,12 @@ export default async function CommunityPage({ params }: { params: Promise<{ slug
     .eq("aprobado", true)
     .order("fecha_inicio", { ascending: true });
 
-  // 2. NOTICIAS: Trae SOLO las de esta comunidad específica
   const { data: noticias } = await supabase
     .from("noticias")
     .select("*")
     .eq("comunidad_slug", slug) 
     .order("creado_en", { ascending: false });
 
-  // 3. RECUERDOS: Trae SOLO los de esta comunidad específica
   const { data: recuerdos } = await supabase
     .from("publicaciones")
     .select("*")
@@ -63,7 +54,6 @@ export default async function CommunityPage({ params }: { params: Promise<{ slug
       {/* HERO DE LA COMUNIDAD */}
       <section className="relative min-h-[60vh] md:min-h-[70vh] flex items-center pt-24 pb-12 overflow-hidden">
         <div className="absolute inset-0 z-0">
-          {/* 🪄 APLICAMOS LA IMAGEN DINÁMICA AQUÍ */}
           <Image src={imagenHero} alt={info.nombre} fill className="object-cover object-center opacity-40" priority />
           <div className="absolute inset-0 bg-gradient-to-r from-real-black via-real-black/80 to-transparent"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-real-black via-transparent to-transparent"></div>
@@ -77,8 +67,8 @@ export default async function CommunityPage({ params }: { params: Promise<{ slug
         </div>
       </section>
 
-      {/* 1. SECCIÓN DE NOTICIAS / PUBLICACIONES */}
-      <section className="py-12 md:py-16 px-6 max-w-7xl mx-auto w-full">
+      {/* 1. SECCIÓN DE NOTICIAS / PUBLICACIONES (FEED VERTICAL) */}
+      <section className="py-12 md:py-16 px-6 max-w-3xl mx-auto w-full">
         <div className="flex items-center gap-4 mb-8">
           <Megaphone className="text-real-purple" size={28} />
           <h2 className="font-serif text-2xl md:text-4xl font-bold text-white">Publicaciones</h2>
@@ -90,31 +80,9 @@ export default async function CommunityPage({ params }: { params: Promise<{ slug
              <p className="text-gray-500">No hay publicaciones recientes.</p>
            </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-6">
             {noticias.map((noticia) => (
-              <Link href={`/noticias/${noticia.id}`} key={noticia.id} className="group bg-real-dark border border-white/10 rounded-2xl overflow-hidden hover:border-real-purple/50 transition-all flex flex-col hover:-translate-y-1 shadow-lg">
-                {noticia.imagen_url && (
-                  <div className="w-full h-48 md:h-56 relative overflow-hidden bg-black/50">
-                    <img src={noticia.imagen_url} alt={noticia.titulo} className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105 select-none" />
-                  </div>
-                )}
-                <div className="p-5 flex flex-col flex-grow">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-real-gold bg-real-gold/10 px-2 py-1 rounded-md">
-                      {noticia.comunidad_slug === 'general' ? 'General' : 'Comunidad'}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {new Date(noticia.creado_en).toLocaleDateString('es-ES', { timeZone: 'America/Santo_Domingo', day: 'numeric', month: 'short' })}
-                    </span>
-                  </div>
-                  <h3 className="font-serif text-lg font-bold text-white mb-2 leading-tight line-clamp-2">{noticia.titulo}</h3>
-                  <p className="text-gray-400 text-sm line-clamp-3 mb-4 flex-grow">{noticia.contenido}</p>
-                  <div className="mt-auto pt-3 border-t border-white/5 flex justify-between items-center">
-                    <span className="text-real-purple text-sm font-semibold group-hover:text-white transition-colors">Leer más →</span>
-                    {noticia.pdf_url && <FileText size={16} className="text-real-gold" />}
-                  </div>
-                </div>
-              </Link>
+              <PublicationCard key={noticia.id} noticia={noticia} />
             ))}
           </div>
         )}
