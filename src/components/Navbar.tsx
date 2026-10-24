@@ -8,19 +8,16 @@ import { Menu, X } from "lucide-react";
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   
-  // 🆕 Estados para el scroll inteligente
+  // Estados para el scroll inteligente
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
-  // 🆕 Lógica para ocultar/mostrar según el scroll
   useEffect(() => {
     const controlNavbar = () => {
       if (typeof window !== "undefined") {
-        // Si baja y pasa de 80px, se oculta
         if (window.scrollY > lastScrollY && window.scrollY > 80) {
           setIsVisible(false);
         } else {
-          // Si sube, aparece
           setIsVisible(true);
         }
         setLastScrollY(window.scrollY);
@@ -42,6 +39,7 @@ export default function Navbar() {
     { name: "Feed General", href: "/feed" },
     { name: "Prédicas", href: "/predicas" },
     { name: "Galería", href: "/galeria" },
+    { name: "Panel", href: "/admin" }, // <-- NUEVO BOTÓN AGREGADO AQUÍ
   ];
 
   return (
@@ -67,7 +65,11 @@ export default function Navbar() {
         {/* Menú de escritorio */}
         <div className="hidden md:flex gap-6 text-sm font-medium text-gray-300 absolute left-1/2 transform -translate-x-1/2">
           {links.map((link) => (
-            <Link key={link.name} href={link.href} className="hover:text-white transition-colors">
+            <Link 
+              key={link.name} 
+              href={link.href} 
+              className={`hover:text-white transition-colors ${link.name === 'Panel' ? 'text-real-gold font-bold' : ''}`}
+            >
               {link.name}
             </Link>
           ))}
@@ -89,7 +91,7 @@ export default function Navbar() {
             key={link.name} 
             href={link.href} 
             onClick={() => setIsOpen(false)}
-            className="text-2xl font-serif font-bold text-gray-300 hover:text-real-gold transition-colors"
+            className={`text-2xl font-serif font-bold transition-colors ${link.name === 'Panel' ? 'text-real-gold hover:text-white mt-4 border-t border-white/10 pt-4' : 'text-gray-300 hover:text-real-gold'}`}
           >
             {link.name}
           </Link>
