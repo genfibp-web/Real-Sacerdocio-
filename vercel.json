@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/versiculo-diario",
-      "schedule": "0 9 * * *"
+      "schedule": "0 13 * * *"
     },
     {
       "path": "/api/cron/notificaciones-eventos",
