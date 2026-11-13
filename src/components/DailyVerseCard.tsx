@@ -15,7 +15,8 @@ export default function DailyVerseCard() {
         .from('versiculos_diarios')
         .select('*')
         .eq('fecha', hoy)
-        .single();
+        .limit(1)         // <-- FIX: Obliga a traer solo un registro
+        .maybeSingle();   // <-- FIX: Evita que la página explote si no hay datos
       
       if (data) setVersiculo(data);
     };

@@ -11,7 +11,8 @@ export default async function VersiculoPage({ params }: { params: Promise<{ fech
     .from("versiculos_diarios")
     .select("*")
     .eq("fecha", fecha)
-    .maybeSingle();
+    .limit(1)         // <--- FIX: Obliga a traer solo un registro
+    .maybeSingle();   // <--- Mantiene la seguridad de no romper si no hay datos
 
   if (!versiculo) notFound();
 
