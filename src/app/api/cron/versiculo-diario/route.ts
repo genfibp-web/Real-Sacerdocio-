@@ -42,56 +42,59 @@ export async function GET(req: Request) {
     const citasRecientes = historial?.map(v => v.cita).join(', ') || '';
 
     let versiculoGenerado = null;
-    let intentosMaximos = 5; // Subimos a 5 intentos para que sea más fuerte
+    let intentosMaximos = 5; 
     let errorFinal = null;
 
-    // 🚀 SISTEMA DE REINTENTOS AGRESIVO (Sin respaldos)
+    // 🚀 SISTEMA DE REINTENTOS CON GROQ (Llama 3.3)
     for (let intento = 1; intento <= intentosMaximos; intento++) {
       try {
-        console.log(`⏳ Intento ${intento} de generar versículo con IA...`);
+        console.log(`⏳ Intento ${intento} de generar versículo con Groq IA...`);
         
         const prompt = `Genera el versículo bíblico para el día de hoy. 
         IMPORTANTE: NO REPITAS ninguno de estos versículos que ya se usaron recientemente: [${citasRecientes}]. 
         Responde ÚNICAMENTE con un objeto JSON válido (sin markdown, sin texto extra) con estas claves exactas: {"cita": "Libro Capítulo:Versículo", "texto": "El texto bíblico completo (en español)", "mensaje": "Una reflexión profunda y alentadora de 2 párrafos aplicable a la vida diaria."}`;
         
-        const respuestaIA = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+        const respuestaIA = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-              contents: [{ parts: [{ text: prompt }] }], 
-              generationConfig: { responseMimeType: "application/json", temperature: 0.9 } 
+          headers: {
+            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile", // Modelo ultrarrápido y potente
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.9,
+            response_format: { type: "json_object" } // Fuerza la respuesta en JSON
           })
         });
         
         if (!respuestaIA.ok) {
-          throw new Error(`Google API Error (Código ${respuestaIA.status}): ${JSON.stringify(await respuestaIA.json())}`);
+          throw new Error(`Groq API Error (Código ${respuestaIA.status}): ${JSON.stringify(await respuestaIA.json())}`);
         }
         
         const dataIA = await respuestaIA.json();
-        versiculoGenerado = JSON.parse(dataIA.candidates[0].content.parts[0].text);
+        const textoGenerado = dataIA.choices[0].message.content;
+        versiculoGenerado = JSON.parse(textoGenerado);
 
         if (citasRecientes.includes(versiculoGenerado.cita)) {
           throw new Error(`La IA generó un versículo repetido (${versiculoGenerado.cita}). Reintentando...`);
         }
         
         console.log(`✅ ¡ÉXITO! Versículo generado en el intento ${intento}:`, versiculoGenerado.cita);
-        break; // Si funciona, salimos del bucle y seguimos al guardado
+        break; // Si funciona, salimos del bucle
 
       } catch (error: any) {
         console.error(`❌ Intento ${intento} fallido:`, error.message);
         errorFinal = error.message;
 
         if (intento === intentosMaximos) {
-          // Si llegamos al último intento y falló, lanzamos el error para que la terminal lo vea
           throw new Error(`FALLO TOTAL TRAS ${intentosMaximos} INTENTOS. Último error: ${errorFinal}`);
         } else {
-          // Si no es el último intento, esperamos 3 segundos antes de volver a intentar
-          await delay(3000); 
+          await delay(3000); // Esperar 3 segundos antes de reintentar
         }
       }
     }
 
-    // Si por alguna razón versiculoGenerado sigue siendo null, cortamos aquí.
     if (!versiculoGenerado) {
       throw new Error("No se pudo generar el versículo por razones desconocidas.");
     }
@@ -102,7 +105,7 @@ export async function GET(req: Request) {
       { onConflict: 'fecha', ignoreDuplicates: true }
     );
 
-    // 4. Enviar notificación push (Solo si hay un versículo nuevo real de la IA)
+    // 4. Enviar notificación push
     const { data: subscriptions } = await supabaseAdmin.from('push_subscriptions').select('*');
     if (subscriptions && subscriptions.length > 0) {
       const payload = JSON.stringify({
@@ -123,7 +126,6 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ success: true, versiculo: versiculoGenerado.cita });
   } catch (error: any) {
-    // Si todo falla catastróficamente, la terminal te mostrará este error
     return NextResponse.json({ error: "ERROR CRÍTICO", motivo: error.message }, { status: 500 });
   }
 }
