@@ -104,14 +104,14 @@ export async function GET(req: Request) {
       
       console.log("✅ Versículo generado por la IA con éxito:", versiculoGenerado.cita);
 
-    } catch (error) {
-      console.error("❌ La IA falló. Usando lista de respaldo. Motivo:", error);
+           } catch (error: any) {
+      console.error("Fallo la IA, usando respaldo:", error);
       
-      // Lógica de respaldo mejorada: Busca uno que NO esté en el historial
-      const respaldosDisponibles = versiculosRespaldo.filter(v => !citasRecientes.includes(v.cita));
-      const listaParaElegir = respaldosDisponibles.length > 0 ? respaldosDisponibles : versiculosRespaldo;
-      const indiceAleatorio = Math.floor(Math.random() * listaParaElegir.length);
-      versiculoGenerado = listaParaElegir[indiceAleatorio];
+      // 🚨 PRUEBA: Si la IA falla, que la terminal nos muestre el error exacto de Google
+      return NextResponse.json({ 
+        error: "La IA falló", 
+        motivo: error.message || error.toString() 
+      }, { status: 500 });
     }
 
     // 3. Guardar en base de datos (Upsert previene duplicados)
