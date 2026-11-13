@@ -104,10 +104,8 @@ export async function GET(req: Request) {
       
       console.log("✅ Versículo generado por la IA con éxito:", versiculoGenerado.cita);
 
-           } catch (error: any) {
-      console.error("Fallo la IA, usando respaldo:", error);
-      
-      // 🚨 PRUEBA: Si la IA falla, que la terminal nos muestre el error exacto de Google
+     } catch (error: any) {
+      // 🚨 PRUEBA: Si la IA falla, que el curl nos muestre el error exacto de Google
       return NextResponse.json({ 
         error: "La IA falló", 
         motivo: error.message || error.toString() 
