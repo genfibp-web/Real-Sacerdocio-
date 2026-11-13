@@ -8,10 +8,8 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY!
 );
 
-const versiculosRespaldo = [
-  { cita: "Filipenses 4:13", texto: "Todo lo puedo en Cristo que me fortalece.", mensaje: "No importa cuán grande sea el desafío que enfrentas hoy, no estás solo. Dios te da la fuerza para superar cualquier obstáculo." },
-  // ... (puedes dejar el resto de la lista de respaldo como estaba)
-];
+// Función para hacer una pausa (esperar antes de reintentar)
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 export async function GET(req: Request) {
   try {
@@ -43,47 +41,68 @@ export async function GET(req: Request) {
 
     const citasRecientes = historial?.map(v => v.cita).join(', ') || '';
 
-    let versiculoGenerado;
-    
-    try {
-      const prompt = `Genera el versículo bíblico para el día de hoy. 
-      IMPORTANTE: NO REPITAS ninguno de estos versículos que ya se usaron recientemente: [${citasRecientes}]. 
-      Responde ÚNICAMENTE con un objeto JSON válido (sin markdown, sin texto extra) con estas claves exactas: {"cita": "Libro Capítulo:Versículo", "texto": "El texto bíblico completo (en español)", "mensaje": "Una reflexión profunda y alentadora de 2 párrafos aplicable a la vida diaria."}`;
-      
-      const respuestaIA = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            contents: [{ parts: [{ text: prompt }] }], 
-            generationConfig: { responseMimeType: "application/json", temperature: 0.9 } 
-        })
-      });
-      
-      if (!respuestaIA.ok) {
-        const err = await respuestaIA.json();
-        throw new Error(`Google API Error: ${JSON.stringify(err)}`);
-      }
-      
-      const dataIA = await respuestaIA.json();
-      versiculoGenerado = JSON.parse(dataIA.candidates[0].content.parts[0].text);
+    let versiculoGenerado = null;
+    let intentosMaximos = 5; // Subimos a 5 intentos para que sea más fuerte
+    let errorFinal = null;
 
-      if (citasRecientes.includes(versiculoGenerado.cita)) {
-        throw new Error("La IA repitió un versículo reciente");
+    // 🚀 SISTEMA DE REINTENTOS AGRESIVO (Sin respaldos)
+    for (let intento = 1; intento <= intentosMaximos; intento++) {
+      try {
+        console.log(`⏳ Intento ${intento} de generar versículo con IA...`);
+        
+        const prompt = `Genera el versículo bíblico para el día de hoy. 
+        IMPORTANTE: NO REPITAS ninguno de estos versículos que ya se usaron recientemente: [${citasRecientes}]. 
+        Responde ÚNICAMENTE con un objeto JSON válido (sin markdown, sin texto extra) con estas claves exactas: {"cita": "Libro Capítulo:Versículo", "texto": "El texto bíblico completo (en español)", "mensaje": "Una reflexión profunda y alentadora de 2 párrafos aplicable a la vida diaria."}`;
+        
+        const respuestaIA = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+              contents: [{ parts: [{ text: prompt }] }], 
+              generationConfig: { responseMimeType: "application/json", temperature: 0.9 } 
+          })
+        });
+        
+        if (!respuestaIA.ok) {
+          throw new Error(`Google API Error (Código ${respuestaIA.status}): ${JSON.stringify(await respuestaIA.json())}`);
+        }
+        
+        const dataIA = await respuestaIA.json();
+        versiculoGenerado = JSON.parse(dataIA.candidates[0].content.parts[0].text);
+
+        if (citasRecientes.includes(versiculoGenerado.cita)) {
+          throw new Error(`La IA generó un versículo repetido (${versiculoGenerado.cita}). Reintentando...`);
+        }
+        
+        console.log(`✅ ¡ÉXITO! Versículo generado en el intento ${intento}:`, versiculoGenerado.cita);
+        break; // Si funciona, salimos del bucle y seguimos al guardado
+
+      } catch (error: any) {
+        console.error(`❌ Intento ${intento} fallido:`, error.message);
+        errorFinal = error.message;
+
+        if (intento === intentosMaximos) {
+          // Si llegamos al último intento y falló, lanzamos el error para que la terminal lo vea
+          throw new Error(`FALLO TOTAL TRAS ${intentosMaximos} INTENTOS. Último error: ${errorFinal}`);
+        } else {
+          // Si no es el último intento, esperamos 3 segundos antes de volver a intentar
+          await delay(3000); 
+        }
       }
-      
-    } catch (error: any) {
-      // 🚨 MODO DIAGNÓSTICO ACTIVADO: Si falla, devolvemos el error a la terminal y NO usamos respaldo
-      return NextResponse.json({ 
-        error: "FALLO DE IA", 
-        motivo: error.message || error.toString() 
-      }, { status: 500 });
     }
 
+    // Si por alguna razón versiculoGenerado sigue siendo null, cortamos aquí.
+    if (!versiculoGenerado) {
+      throw new Error("No se pudo generar el versículo por razones desconocidas.");
+    }
+
+    // 3. Guardar en base de datos (Solo llega aquí si la IA fue exitosa)
     await supabaseAdmin.from('versiculos_diarios').upsert(
       [{ fecha: hoy, cita: versiculoGenerado.cita, texto: versiculoGenerado.texto, mensaje: versiculoGenerado.mensaje }],
       { onConflict: 'fecha', ignoreDuplicates: true }
     );
 
+    // 4. Enviar notificación push (Solo si hay un versículo nuevo real de la IA)
     const { data: subscriptions } = await supabaseAdmin.from('push_subscriptions').select('*');
     if (subscriptions && subscriptions.length > 0) {
       const payload = JSON.stringify({
@@ -98,11 +117,13 @@ export async function GET(req: Request) {
       }));
     }
 
+    // 5. Limpieza
     const fechaLimite = new Date(); fechaLimite.setDate(fechaLimite.getDate() - 30);
     await supabaseAdmin.from('versiculos_diarios').delete().lt('fecha', fechaLimite.toLocaleDateString('en-CA', { timeZone: 'America/Santo_Domingo' }));
 
     return NextResponse.json({ success: true, versiculo: versiculoGenerado.cita });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // Si todo falla catastróficamente, la terminal te mostrará este error
+    return NextResponse.json({ error: "ERROR CRÍTICO", motivo: error.message }, { status: 500 });
   }
 }
