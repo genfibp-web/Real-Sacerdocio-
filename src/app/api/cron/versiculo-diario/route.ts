@@ -8,7 +8,7 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY!
 );
 
-// 1. LISTA DE RESPALDO AMPLIADA (30 versículos diferentes)
+// Lista de respaldo ampliada (por si Google falla)
 const versiculosRespaldo = [
   { cita: "Filipenses 4:13", texto: "Todo lo puedo en Cristo que me fortalece.", mensaje: "No importa cuán grande sea el desafío que enfrentas hoy, no estás solo. Dios te da la fuerza para superar cualquier obstáculo." },
   { cita: "Salmos 23:1", texto: "Jehová es mi pastor; nada me faltará.", mensaje: "Descansa en la promesa de que Dios cuida de ti. Él conoce tus necesidades y proveerá en el momento perfecto." },
@@ -79,13 +79,12 @@ export async function GET(req: Request) {
       IMPORTANTE: NO REPITAS ninguno de estos versículos que ya se usaron recientemente: [${citasRecientes}]. 
       Responde ÚNICAMENTE con un objeto JSON válido (sin markdown, sin texto extra) con estas claves exactas: {"cita": "Libro Capítulo:Versículo", "texto": "El texto bíblico completo (en español)", "mensaje": "Una reflexión profunda y alentadora de 2 párrafos aplicable a la vida diaria."}`;
       
-      // 🛠️ FIX DE IA: Usamos gemini-1.5-flash (el modelo real de Google)
-      const respuestaIA = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+      // 🛠️ FIX DEFINITIVO: Usamos gemini-flash-latest (siempre apunta al modelo más nuevo de Google)
+      const respuestaIA = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
             contents: [{ parts: [{ text: prompt }] }], 
-            // Subimos la temperatura a 0.9 para que la IA sea mucho más creativa y no se repita
             generationConfig: { responseMimeType: "application/json", temperature: 0.9 } 
         })
       });
@@ -105,11 +104,13 @@ export async function GET(req: Request) {
       console.log("✅ Versículo generado por la IA con éxito:", versiculoGenerado.cita);
 
      } catch (error: any) {
-      // 🚨 PRUEBA: Si la IA falla, que el curl nos muestre el error exacto de Google
-      return NextResponse.json({ 
-        error: "La IA falló", 
-        motivo: error.message || error.toString() 
-      }, { status: 500 });
+      // Si Google falla, el sistema NO se rompe. Usa la lista de respaldo.
+      console.error("❌ La IA falló. Usando lista de respaldo. Motivo:", error.message);
+      
+      const respaldosDisponibles = versiculosRespaldo.filter(v => !citasRecientes.includes(v.cita));
+      const listaParaElegir = respaldosDisponibles.length > 0 ? respaldosDisponibles : versiculosRespaldo;
+      const indiceAleatorio = Math.floor(Math.random() * listaParaElegir.length);
+      versiculoGenerado = listaParaElegir[indiceAleatorio];
     }
 
     // 3. Guardar en base de datos (Upsert previene duplicados)
