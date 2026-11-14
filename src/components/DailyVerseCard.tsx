@@ -10,15 +10,27 @@ export default function DailyVerseCard() {
 
   useEffect(() => {
     const fetchHoy = async () => {
+      // Calculamos la fecha de hoy
       const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santo_Domingo' });
-      const { data } = await supabase
+      console.log("🔍 Buscando versículo para la fecha:", hoy);
+      
+      const { data, error } = await supabase
         .from('versiculos_diarios')
         .select('*')
         .eq('fecha', hoy)
-        .limit(1)         // <-- FIX: Obliga a traer solo un registro
-        .maybeSingle();   // <-- FIX: Evita que la página explote si no hay datos
+        .limit(1)
+        .maybeSingle();
       
-      if (data) setVersiculo(data);
+      if (error) {
+        console.error("❌ Error de Supabase:", error);
+      }
+      
+      if (data) {
+        console.log("✅ Versículo encontrado:", data);
+        setVersiculo(data);
+      } else {
+        console.warn("⚠️ No se encontró ningún versículo para hoy. El componente se ocultará.");
+      }
     };
     fetchHoy();
   }, []);
